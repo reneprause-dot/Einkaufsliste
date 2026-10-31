@@ -78,6 +78,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   <div class="flex items-center justify-between"><h2 id="settingsTitle" class="text-lg font-extrabold">Einstellungen</h2><button id="closeSettings" class="p-2 text-xl text-slate-500">×</button></div>
   <label for="apiKey" class="mt-5 block text-sm font-bold">Gemini API-Key</label><input id="apiKey" type="password" autocomplete="off" placeholder="AIza…" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
   <p class="mt-2 text-xs leading-relaxed text-slate-500">Der Key liegt lokal und unverschlüsselt im Browser-Speicher. Verwende einen eigenen API-Key, beschränke ihn nach Möglichkeit und veröffentliche keinen Key in einem öffentlichen Repository.</p>
+  <button id="testKey" type="button" class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">🔑 Key testen</button><p id="keyStatus" class="mt-2 text-xs text-slate-600" aria-live="polite"></p>
   <label for="modelName" class="mt-4 block text-sm font-bold">Gemini-Modell</label><input id="modelName" value="gemini-3.8-flash" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
   <p class="mt-2 text-xs text-slate-500">Empfohlen: gemini-3.8-flash. Ist ein Modell abgeschaltet, weicht die App automatisch auf neuere Modelle aus.</p>
   <div class="mt-5 flex gap-2"><button id="saveSettings" class="flex-1 rounded-xl bg-forest-700 px-4 py-3 font-bold text-white">Speichern</button><button id="removeKey" class="rounded-xl border border-slate-200 px-4 py-3 text-sm">Key löschen</button></div>
@@ -281,6 +282,22 @@ $("micBtn").addEventListener("click",()=>{
  rec.onerror=e=>notify(e.error==="not-allowed"||e.error==="service-not-allowed"?"Mikrofon-Zugriff nicht erlaubt.":"Spracherkennung: "+e.error);
  rec.onend=()=>{rec=null;$("micBtn").textContent="🎤 Sprechen";processVoice();};
  try{rec.start();$("micBtn").textContent="⏹ Zuhören … (tippen zum Beenden)";$("voiceStatus").textContent="Sprich jetzt, z. B. „Ich brauche Milch und drei Bananen“.";}catch(e){rec=null;notify("Mikrofon konnte nicht gestartet werden.");}});
+
+// ===== API-Key-Test =====
+$("testKey").addEventListener("click",async()=>{
+ const key=$("apiKey").value.trim()||localStorage.getItem(KEY_KEY),st=$("keyStatus");
+ if(!key){st.textContent="❌ Kein Key eingetragen.";return;}
+ const first=$("modelName").value.trim()||MODELS[0];let done=false,miss="";st.textContent="Prüfe …";$("testKey").disabled=true;
+ for(const m of [first,...MODELS.filter(x=>x!==first)]){
+  try{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:"Antworte nur mit OK."}]}]})});
+   const d=await r.json().catch(()=>({})),em=d?.error?.message||"HTTP "+r.status;
+   if(r.ok){done=true;$("modelName").value=m;st.textContent=`✅ Key funktioniert – Modell ${m} antwortet.`+(m!==first?` „${first}“ ist nicht verfügbar, bitte Speichern tippen.`:"");break;}
+   if(r.status===404||/not found|no longer available|deprecated/i.test(em)){miss=`Modell „${m}“ nicht verfügbar.`;continue;}
+   done=true;st.textContent="❌ "+(/API key not valid|API_KEY_INVALID/i.test(em)?"Key ungültig.":r.status===403?"Zugriff verweigert (Key-Einschränkung oder Gemini-API nicht aktiviert): "+em:r.status===429?"Limit/Kontingent erreicht: "+em:em);break;
+  }catch(e){done=true;st.textContent="❌ Keine Verbindung zu Gemini (Netzwerk prüfen).";break;}
+ }
+ if(!done)st.textContent="❌ Kein Modell verfügbar. "+miss;
+ $("testKey").disabled=false;});
 fillCategories();setView("list");save();
 if("serviceWorker"in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn));
 })();
