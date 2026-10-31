@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#166534">
 <meta name="description" content="Deine private, KI-gestützte Einkaufslisten-App.">
-<title>Einkaufsliste V2</title>
+<title>Einkaufsliste V3</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <script src="https://cdn.tailwindcss.com"></script>
@@ -22,12 +22,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <div class="mx-auto min-h-screen max-w-2xl bg-slate-50">
 <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
  <div class="flex items-center justify-between">
-  <div><p class="text-xs font-bold uppercase tracking-[.18em] text-forest-700">Dein Einkaufshelfer · V2</p><h1 class="text-2xl font-black tracking-tight">Einkaufsliste <span>🛒</span></h1></div>
+  <div><p class="text-xs font-bold uppercase tracking-[.18em] text-forest-700">Dein Einkaufshelfer · V3</p><h1 class="text-2xl font-black tracking-tight">Einkaufsliste <span>🛒</span></h1></div>
   <button id="settingsBtn" class="rounded-xl border border-slate-200 p-3 text-xl hover:bg-slate-50" aria-label="Einstellungen">⚙️</button>
  </div>
  <div class="mt-4 flex items-center gap-3"><div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div id="progressBar" class="h-full rounded-full bg-forest-600 transition-all" style="width:0%"></div></div><span id="progressText" class="min-w-16 text-right text-xs font-semibold text-slate-500">0 / 0</span></div>
+ <nav class="mt-3 grid grid-cols-3 gap-2"><button id="tab-list">🛒 Liste</button><button id="tab-products">📦 Produkte</button><button id="tab-stats">📊 Statistik</button></nav>
 </header>
-<main class="space-y-5 px-4 py-5 safe-bottom">
+<main class="px-4 py-5 safe-bottom"><div id="view-list" class="space-y-5">
  <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
   <div class="flex items-center justify-between gap-2"><div><p class="text-xs font-bold uppercase tracking-wider text-forest-700">Deine Listen</p><h2 class="text-lg font-extrabold">Was steht heute an?</h2></div><button id="newListBtn" class="rounded-xl bg-forest-700 px-3 py-2.5 text-sm font-bold text-white">＋ Neue Liste</button></div>
   <div class="mt-3 flex gap-2"><select id="listSelect" class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold"></select><button id="renameListBtn" class="rounded-xl border border-slate-200 px-3 text-sm" title="Liste umbenennen">✏️</button><button id="deleteListBtn" class="rounded-xl border border-slate-200 px-3 text-sm" title="Liste löschen">🗑️</button></div>
@@ -43,21 +44,25 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
   <h2 class="font-bold">Artikel hinzufügen</h2>
   <form id="addForm" class="mt-3 grid grid-cols-12 gap-2">
-   <input id="newName" required maxlength="100" placeholder="Artikel, z. B. Äpfel" class="col-span-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-5">
+   <input id="newName" list="prodList" autocomplete="off" required maxlength="100" placeholder="Artikel, z. B. Äpfel" class="col-span-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-5">
    <input id="newQty" type="number" min="0.01" step="any" value="1" aria-label="Menge" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-2">
    <input id="newUnit" maxlength="30" placeholder="Einheit" aria-label="Einheit" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-2">
    <select id="newCategory" aria-label="Warengruppe" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-2 py-3 text-xs sm:col-span-3"></select>
+   <input id="newPrice" type="number" min="0" step="any" placeholder="Preis je Einheit (€)" aria-label="Preis" class="col-span-7 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm"><button type="button" id="scanBtn" class="col-span-5 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold">📷 Barcode</button>
    <button class="col-span-12 rounded-xl bg-forest-700 px-3 py-3 text-sm font-bold text-white hover:bg-forest-800" type="submit">＋ Zur aktuellen Liste hinzufügen</button>
   </form>
  </section>
 
  <section>
-  <div class="mb-3 flex flex-wrap items-end justify-between gap-3"><div><h2 class="text-lg font-extrabold">Deine Artikel</h2><p id="listSubheading" class="text-xs text-slate-500"></p></div><button id="clearDoneBtn" class="text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4">Erledigte löschen</button></div>
+  <div class="mb-3 flex flex-wrap items-end justify-between gap-3"><div><h2 class="text-lg font-extrabold">Deine Artikel</h2><p id="listSubheading" class="text-xs text-slate-500"></p></div><div class="flex items-center gap-3"><button id="finishBtn" class="rounded-xl bg-forest-700 px-3 py-2 text-xs font-bold text-white">✓ Einkauf abschließen</button><button id="clearDoneBtn" class="text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4">Erledigte löschen</button></div></div>
   <div class="mb-3 flex gap-2 overflow-x-auto pb-1"><button id="allFilter" class="category-chip rounded-full bg-forest-700 px-4 py-2 text-xs font-bold text-white">Alle Artikel</button><button id="favFilter" class="category-chip rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600">★ Favoriten</button></div>
   <div id="itemsList" class="space-y-3" aria-live="polite"></div>
   <div id="emptyState" class="rounded-2xl border-2 border-dashed border-slate-200 bg-white px-5 py-10 text-center"><div class="text-4xl">🥑</div><p class="mt-3 font-bold">Diese Liste ist noch leer</p><p class="mt-1 text-sm text-slate-500">Füge Artikel hinzu oder importiere sie aus einem Bild.</p></div>
  </section>
- <p class="px-2 text-center text-xs leading-relaxed text-slate-400">Alle Listen und Artikel bleiben lokal auf diesem Gerät gespeichert. Für die KI-Bilderkennung werden Bilder an Google Gemini übertragen.</p>
+</div>
+<div id="view-products" class="hidden space-y-3"><input id="prodSearch" type="search" placeholder="Produkt suchen…" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm"><p class="px-1 text-xs text-slate-500">Produkte werden automatisch gelernt, sobald du Artikel hinzufügst. Hier verwaltest du Preise und Barcodes.</p><div id="prodItems" class="space-y-2"></div><p id="prodEmpty" class="rounded-2xl border-2 border-dashed border-slate-200 bg-white px-5 py-8 text-center text-sm text-slate-500">Noch keine Produkte gespeichert.</p></div>
+<div id="view-stats" class="hidden space-y-3"></div>
+ <p class="px-2 pt-5 text-center text-xs leading-relaxed text-slate-400">Alle Listen und Artikel bleiben lokal auf diesem Gerät gespeichert. Für die KI-Bilderkennung werden Bilder an Google Gemini übertragen.</p>
 </main>
 </div>
 
@@ -66,16 +71,19 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   <div class="flex items-center justify-between"><h2 id="settingsTitle" class="text-lg font-extrabold">Einstellungen</h2><button id="closeSettings" class="p-2 text-xl text-slate-500">×</button></div>
   <label for="apiKey" class="mt-5 block text-sm font-bold">Gemini API-Key</label><input id="apiKey" type="password" autocomplete="off" placeholder="AIza…" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
   <p class="mt-2 text-xs leading-relaxed text-slate-500">Der Key liegt lokal und unverschlüsselt im Browser-Speicher. Verwende einen eigenen API-Key, beschränke ihn nach Möglichkeit und veröffentliche keinen Key in einem öffentlichen Repository.</p>
-  <label for="modelName" class="mt-4 block text-sm font-bold">Gemini-Modell</label><input id="modelName" value="gemini-2.5-flash" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
+  <label for="modelName" class="mt-4 block text-sm font-bold">Gemini-Modell</label><input id="modelName" value="gemini-3.8-flash" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
+  <p class="mt-2 text-xs text-slate-500">Empfohlen: gemini-3.8-flash. Ist ein Modell abgeschaltet, weicht die App automatisch auf neuere Modelle aus.</p>
   <div class="mt-5 flex gap-2"><button id="saveSettings" class="flex-1 rounded-xl bg-forest-700 px-4 py-3 font-bold text-white">Speichern</button><button id="removeKey" class="rounded-xl border border-slate-200 px-4 py-3 text-sm">Key löschen</button></div>
   <p class="mt-3 text-xs text-slate-400"><a class="underline" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio – API-Key verwalten</a></p>
  </div>
 </div>
+<datalist id="prodList"></datalist>
+<div id="scanModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 p-3" role="dialog" aria-modal="true"><div class="w-full max-w-md rounded-3xl bg-white p-4"><div class="flex items-center justify-between"><h2 class="font-extrabold">Barcode scannen</h2><button id="closeScan" class="p-2 text-xl text-slate-500">×</button></div><div id="reader" class="mt-3 overflow-hidden rounded-2xl"></div><p class="mt-2 text-xs text-slate-500">Kamera auf den Strichcode halten (EAN/UPC). Der Produktname wird über Open Food Facts gesucht.</p></div></div>
 <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 hidden -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl" role="status"></div>
 <script>
 (() => {
 "use strict";
-const DB_KEY="einkaufsliste.v2.data", KEY_KEY="einkaufsliste.geminiKey.v1", MODEL_KEY="einkaufsliste.geminiModel.v1";
+const DB_KEY="einkaufsliste.v3.data", KEY_KEY="einkaufsliste.geminiKey.v1", MODEL_KEY="einkaufsliste.geminiModel.v1";
 const CATEGORIES=[
  {id:"obst",name:"Obst & Gemüse",icon:"🥑",color:"bg-lime-50"},
  {id:"backwaren",name:"Backwaren",icon:"🥖",color:"bg-amber-50"},
@@ -93,8 +101,8 @@ const uid=()=>crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random
 const norm=s=>String(s||"").trim().toLocaleLowerCase("de-DE").replace(/\s+/g," ");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let db=loadDB(),selectedFiles=[],favoritesOnly=false,toastTimer;
-function freshDB(){const id=uid();return{version:2,currentListId:id,lists:[{id,name:"Wocheneinkauf",items:[]}]};}
-function loadDB(){try{const d=JSON.parse(localStorage.getItem(DB_KEY)||"null");if(d&&Array.isArray(d.lists)&&d.lists.length){d.lists.forEach(l=>{if(!Array.isArray(l.items))l.items=[]});if(!d.lists.some(l=>l.id===d.currentListId))d.currentListId=d.lists[0].id;return d;}}catch(e){console.warn(e)}const migrated=freshDB();try{const old=JSON.parse(localStorage.getItem("einkaufsliste.items.v1")||"[]");if(Array.isArray(old)){migrated.lists[0].items=old.map(x=>({id:x.id||uid(),name:String(x.name||"Artikel"),quantity:Number(x.quantity)||1,unit:String(x.unit||""),category:"sonstiges",done:!!x.done,favorite:false}));}}catch(e){console.warn("Migration der alten Einkaufsliste nicht möglich",e)}return migrated;}
+function freshDB(){const id=uid();return{version:3,products:[],history:[],currentListId:id,lists:[{id,name:"Wocheneinkauf",items:[]}]};}
+function loadDB(){try{const d=JSON.parse(localStorage.getItem(DB_KEY)||localStorage.getItem("einkaufsliste.v2.data")||"null");if(d&&Array.isArray(d.lists)&&d.lists.length){d.lists.forEach(l=>{if(!Array.isArray(l.items))l.items=[]});d.products=d.products||[];d.history=d.history||[];d.version=3;if(!d.lists.some(l=>l.id===d.currentListId))d.currentListId=d.lists[0].id;return d;}}catch(e){console.warn(e)}const migrated=freshDB();try{const old=JSON.parse(localStorage.getItem("einkaufsliste.items.v1")||"[]");if(Array.isArray(old)){migrated.lists[0].items=old.map(x=>({id:x.id||uid(),name:String(x.name||"Artikel"),quantity:Number(x.quantity)||1,unit:String(x.unit||""),category:"sonstiges",done:!!x.done,favorite:false}));}}catch(e){console.warn("Migration der alten Einkaufsliste nicht möglich",e)}return migrated;}
 function save(){localStorage.setItem(DB_KEY,JSON.stringify(db));}
 function current(){return db.lists.find(l=>l.id===db.currentListId)||db.lists[0];}
 function category(id){return CATEGORIES.find(c=>c.id===id)||CATEGORIES.at(-1);}
@@ -102,9 +110,9 @@ function notify(msg){$("toast").textContent=msg;$("toast").classList.remove("hid
 function fillCategories(){ $("newCategory").innerHTML=CATEGORIES.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join(""); }
 function renderLists(){const sel=$("listSelect");sel.innerHTML=db.lists.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("");sel.value=db.currentListId;}
 function render(){
- renderLists();const list=current(),items=list.items||[],open=items.filter(x=>!x.done),done=items.filter(x=>x.done);
+ renderLists();fillProds();if(view==="products")renderProducts();if(view==="stats")renderStats();const list=current(),items=list.items||[],open=items.filter(x=>!x.done),done=items.filter(x=>x.done);
  $("progressText").textContent=`${done.length} / ${items.length}`;$("progressBar").style.width=items.length?`${done.length/items.length*100}%`:"0%";
- $("listSubheading").textContent=`${list.name} · ${open.length} offen · ${done.length} erledigt`;
+ $("listSubheading").textContent=`${list.name} · ${open.length} offen · ${done.length} erledigt`+(items.some(x=>x.price)?` · ca. ${eur(items.reduce((t,x)=>t+(x.price||0)*x.quantity,0))}`:"");
  $("emptyState").classList.toggle("hidden",items.length>0 && (!favoritesOnly||items.some(x=>x.favorite)));
  $("itemsList").innerHTML="";
  let visible=items.filter(x=>!favoritesOnly||x.favorite);
@@ -133,26 +141,26 @@ function render(){
  $("favFilter").className=`category-chip rounded-full px-4 py-2 text-xs font-bold ${favoritesOnly?"bg-forest-700 text-white":"border border-slate-200 bg-white text-slate-600"}`;
  $("clearDoneBtn").disabled=!done.length;$("clearDoneBtn").classList.toggle("opacity-40",!done.length);
 }
-function qtyText(x){return `${new Intl.NumberFormat("de-DE",{maximumFractionDigits:2}).format(Number(x.quantity)||0)}${x.unit?" "+x.unit:""}`;}
+function qtyText(x){const q=new Intl.NumberFormat("de-DE",{maximumFractionDigits:2}).format(Number(x.quantity)||0)+(x.unit?" "+x.unit:"");return q+(x.price?` · ${eur(x.price)} → ${eur(x.price*x.quantity)}`:"");}
 function addItem(entry){
- const name=String(entry.name||"").trim(),quantity=Number(entry.quantity??1),unit=String(entry.unit||"").trim(),cat=CATEGORIES.some(c=>c.id===entry.category)?entry.category:"sonstiges";
+ const price=Number(String(entry.price??"").replace(",","."))||null,barcode=entry.barcode||"",kp=db.products.find(p=>norm(p.name)===norm(entry.name)),name=String(entry.name||"").trim(),quantity=Number(entry.quantity??1),unit=String(entry.unit||"").trim(),cat=CATEGORIES.some(c=>c.id===entry.category)?entry.category:(kp?.category||"sonstiges");
  if(!name||!Number.isFinite(quantity)||quantity<=0)return false;
  const list=current(),existing=list.items.find(x=>!x.done&&norm(x.name)===norm(name)&&norm(x.unit)===norm(unit)&&x.category===cat);
- if(existing)existing.quantity=Number(existing.quantity||0)+quantity;
- else list.items.push({id:uid(),name,quantity,unit,category:cat,done:false,favorite:false});
- return true;
+ if(existing){existing.quantity=Number(existing.quantity||0)+quantity;if(price)existing.price=price;}
+ else list.items.push({id:uid(),name,quantity,unit,category:cat,price,barcode,done:false,favorite:false});
+ learn({name,unit,category:cat,price,barcode});return true;
 }
 function editItem(id){
  const list=current(),it=list.items.find(x=>x.id===id);if(!it)return;
  const name=prompt("Artikelname:",it.name);if(name===null)return;if(!name.trim()){notify("Name darf nicht leer sein.");return;}
  const qty=prompt("Menge:",String(it.quantity));if(qty===null)return;const n=Number(qty.replace(",","."));if(!Number.isFinite(n)||n<=0){notify("Ungültige Menge.");return;}
  const unit=prompt("Einheit:",it.unit||"");if(unit===null)return;
- const cat=prompt("Warengruppe: "+CATEGORIES.map(c=>`${c.id} = ${c.name}`).join(" | "),it.category||"sonstiges");if(cat===null)return;
- it.name=name.trim();it.quantity=n;it.unit=unit.trim();it.category=CATEGORIES.some(c=>c.id===cat.trim())?cat.trim():"sonstiges";
+ const pr=prompt("Preis je Einheit in € (leer = kein Preis):",it.price??"");if(pr===null)return;const cat=prompt("Warengruppe: "+CATEGORIES.map(c=>`${c.id} = ${c.name}`).join(" | "),it.category||"sonstiges");if(cat===null)return;
+ it.name=name.trim();it.price=Number(pr.replace(",","."))||null;it.quantity=n;it.unit=unit.trim();it.category=CATEGORIES.some(c=>c.id===cat.trim())?cat.trim():"sonstiges";
  const dup=list.items.find(x=>x.id!==id&&!x.done&&!it.done&&norm(x.name)===norm(it.name)&&norm(x.unit)===norm(it.unit)&&x.category===it.category);
- if(dup){dup.quantity=Number(dup.quantity)+n;list.items=list.items.filter(x=>x.id!==id);}save();render();
+ if(dup){dup.quantity=Number(dup.quantity)+n;list.items=list.items.filter(x=>x.id!==id);}learn({name:it.name,unit:it.unit,category:it.category,price:it.price});save();render();
 }
-$("addForm").addEventListener("submit",e=>{e.preventDefault();const ok=addItem({name:$("newName").value,quantity:$("newQty").value,unit:$("newUnit").value,category:$("newCategory").value});if(!ok)return;$("newName").value="";$("newQty").value="1";$("newUnit").value="";save();render();notify("Artikel hinzugefügt.");});
+$("addForm").addEventListener("submit",e=>{e.preventDefault();const ok=addItem({name:$("newName").value,quantity:$("newQty").value,unit:$("newUnit").value,category:$("newCategory").value,price:$("newPrice").value,barcode:pendingBarcode});if(!ok)return;$("newName").value="";$("newPrice").value="";pendingBarcode="";$("newQty").value="1";$("newUnit").value="";save();render();notify("Artikel hinzugefügt.");});
 $("listSelect").addEventListener("change",e=>{db.currentListId=e.target.value;favoritesOnly=false;save();render();});
 $("newListBtn").addEventListener("click",()=>{const name=prompt("Name der neuen Einkaufsliste:");if(!name||!name.trim())return;const l={id:uid(),name:name.trim(),items:[]};db.lists.push(l);db.currentListId=l.id;favoritesOnly=false;save();render();notify("Neue Liste erstellt.");});
 $("renameListBtn").addEventListener("click",()=>{const l=current(),name=prompt("Neuer Listenname:",l.name);if(name&&name.trim()){l.name=name.trim();save();render();}});
@@ -163,26 +171,76 @@ $("uploadBtn").addEventListener("click",()=>$("imageInput").click());
 $("imageInput").addEventListener("change",e=>{selectedFiles.push(...Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/")));e.target.value="";renderPreviews();});
 function renderPreviews(){$("previewList").innerHTML="";selectedFiles.forEach((f,i)=>{const chip=document.createElement("span");chip.className="inline-flex max-w-full items-center gap-2 rounded-lg bg-white/15 px-2 py-1 text-xs text-white";chip.innerHTML=`<span class="max-w-36 truncate">${esc(f.name)}</span><button type="button" aria-label="Entfernen" class="font-bold">×</button>`;chip.querySelector("button").addEventListener("click",()=>{selectedFiles.splice(i,1);renderPreviews();});$("previewList").append(chip);});$("uploadStatus").textContent=selectedFiles.length?`${selectedFiles.length} Bild(er) ausgewählt.`:"Noch keine Bilder ausgewählt.";$("analyzeBtn").disabled=!selectedFiles.length;}
 function toBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(Error("Bild konnte nicht gelesen werden."));r.readAsDataURL(file);});}
-async function analyze(file,key,model){
+async function analyzeWith(file,key,model){
  const b64=await toBase64(file),prompt=`Lies dieses Bild als Einkaufszettel, Rezept oder Produktliste. Extrahiere die Einkaufsartikel mit Name, positiver Menge, Einheit und passender Warengruppe. Bei Rezepten Zutaten als Einkaufsartikel interpretieren. Wenn keine Menge erkennbar ist, quantity=1 und unit="". Identische Artikel mit gleicher Einheit und Warengruppe innerhalb dieses Bildes zusammenfassen. Warengruppe muss exakt eine der folgenden IDs sein: obst, backwaren, milch, fleisch, trocken, getraenke, tiefkuehl, haushalt, drogerie, sonstiges. Obst/Gemüse, Backwaren, Milchprodukte/Eier, Fleisch/Fisch, Vorrat/Konserven, Getränke, Tiefkühl, Haushalt, Drogerie oder Sonstiges. Keine Erklärungen. JSON-Format: {"items":[{"name":"Äpfel","quantity":2,"unit":"Stück","category":"obst"}]}`;
- const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
- const resp=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:file.type,data:b64}}]}],generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{items:{type:"ARRAY",items:{type:"OBJECT",properties:{name:{type:"STRING"},quantity:{type:"NUMBER"},unit:{type:"STRING"},category:{type:"STRING",enum:CATEGORIES.map(c=>c.id)}},required:["name","quantity","unit","category"]}}},required:["items"]}}})});
- const data=await resp.json().catch(()=>({}));if(!resp.ok)throw Error(data?.error?.message||`HTTP ${resp.status}`);
+ const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+ const resp=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:file.type,data:b64}}]}],generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{items:{type:"ARRAY",items:{type:"OBJECT",properties:{name:{type:"STRING"},quantity:{type:"NUMBER"},unit:{type:"STRING"},category:{type:"STRING",enum:CATEGORIES.map(c=>c.id)}},required:["name","quantity","unit","category"]}}},required:["items"]}}})});
+ const data=await resp.json().catch(()=>({}));if(!resp.ok){const e=Error(data?.error?.message||`HTTP ${resp.status}`);e.status=resp.status;throw e;}
  const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("");if(!raw)throw Error("Keine Gemini-Antwort erhalten.");const parsed=JSON.parse(raw);if(!Array.isArray(parsed.items))throw Error("Antwort enthält keine Artikelliste.");return parsed.items;
 }
+const MODELS=["gemini-3.8-flash","gemini-3.7-flash","gemini-3.6-flash","gemini-3-flash-preview"];
+function getModel(){let m=(localStorage.getItem(MODEL_KEY)||"").trim();if(!m||/^gemini-2/.test(m)){m=MODELS[0];localStorage.setItem(MODEL_KEY,m);}return m;}
+async function analyze(file,key,model){let last;for(const m of [model,...MODELS.filter(x=>x!==model)]){try{const r=await analyzeWith(file,key,m);if(m!==model){localStorage.setItem(MODEL_KEY,m);notify("Modell gewechselt auf "+m);}return r;}catch(e){last=e;if(!(e.status===404||/not found|no longer available|deprecated|not supported/i.test(e.message)))throw e;}}throw last;}
 $("analyzeBtn").addEventListener("click",async()=>{
- const key=localStorage.getItem(KEY_KEY),model=(localStorage.getItem(MODEL_KEY)||"gemini-2.5-flash").trim();if(!key){openSettings();notify("Bitte zuerst einen Gemini-Key hinterlegen.");return;}if(!selectedFiles.length)return;
+ const key=localStorage.getItem(KEY_KEY),model=getModel();if(!key){openSettings();notify("Bitte zuerst einen Gemini-Key hinterlegen.");return;}if(!selectedFiles.length)return;
  const files=[...selectedFiles];$("analyzeBtn").disabled=true;$("uploadBtn").disabled=true;$("analyzeBtn").innerHTML='<span class="spinner"></span> Analysiere…';let added=0,errors=[];
  try{for(let i=0;i<files.length;i++){$("uploadStatus").textContent=`Analysiere Bild ${i+1}/${files.length}: ${files[i].name}`;try{const entries=await analyze(files[i],key,model);entries.forEach(x=>{if(addItem(x))added++;});}catch(err){errors.push(`${files[i].name}: ${err.message}`);}}
  save();render();selectedFiles=[];renderPreviews();notify(`${added} erkannte Artikel verarbeitet.`);$("uploadStatus").textContent=errors.length?`${errors.length} Bild(er) mit Fehlern.`:"Alle Bilder erfolgreich analysiert.";if(errors.length)alert("Fehler bei der Bilderkennung:\n\n"+errors.join("\n\n"));
  }finally{$("analyzeBtn").disabled=!selectedFiles.length;$("analyzeBtn").textContent="Bilder analysieren";$("uploadBtn").disabled=false;}
 });
-function openSettings(){$("apiKey").value=localStorage.getItem(KEY_KEY)||"";$("modelName").value=localStorage.getItem(MODEL_KEY)||"gemini-2.5-flash";$("settingsModal").classList.remove("hidden");$("settingsModal").classList.add("flex");}
+function openSettings(){$("apiKey").value=localStorage.getItem(KEY_KEY)||"";$("modelName").value=getModel();$("settingsModal").classList.remove("hidden");$("settingsModal").classList.add("flex");}
 function closeSettings(){$("settingsModal").classList.add("hidden");$("settingsModal").classList.remove("flex");}
 $("settingsBtn").addEventListener("click",openSettings);$("closeSettings").addEventListener("click",closeSettings);$("settingsModal").addEventListener("click",e=>{if(e.target===$("settingsModal"))closeSettings();});
-$("saveSettings").addEventListener("click",()=>{const key=$("apiKey").value.trim(),model=$("modelName").value.trim()||"gemini-2.5-flash";if(key)localStorage.setItem(KEY_KEY,key);else localStorage.removeItem(KEY_KEY);localStorage.setItem(MODEL_KEY,model);closeSettings();notify("Einstellungen gespeichert.");});
+$("saveSettings").addEventListener("click",()=>{const key=$("apiKey").value.trim(),model=$("modelName").value.trim()||MODELS[0];if(key)localStorage.setItem(KEY_KEY,key);else localStorage.removeItem(KEY_KEY);localStorage.setItem(MODEL_KEY,model);closeSettings();notify("Einstellungen gespeichert.");});
 $("removeKey").addEventListener("click",()=>{localStorage.removeItem(KEY_KEY);$("apiKey").value="";notify("API-Key gelöscht.");});
-fillCategories();render();save();
+
+// ===== V3: Produktdatenbank, Preise, Barcode, Statistik =====
+let view="list",pendingBarcode="",scanner=null;
+const eur=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n||0);
+function learn(e){const n=norm(e.name);if(!n)return;let p=db.products.find(x=>(e.barcode&&x.barcode===e.barcode)||norm(x.name)===n);
+ if(!p){p={id:uid(),name:String(e.name).trim(),unit:"",category:e.category,barcode:"",prices:[]};db.products.push(p);}
+ if(e.unit)p.unit=e.unit;if(e.category)p.category=e.category;if(e.barcode)p.barcode=e.barcode;
+ if(e.price>0){const l=p.prices.at(-1);if(!l||l.price!==e.price)p.prices.push({d:new Date().toISOString().slice(0,10),price:e.price});p.prices=p.prices.slice(-20);}}
+function fillProds(){$("prodList").innerHTML=db.products.map(p=>`<option value="${esc(p.name)}">`).join("");}
+function fillForm(p){$("newName").value=p.name;$("newCategory").value=p.category;if(p.unit)$("newUnit").value=p.unit;const l=p.prices.at(-1);if(l)$("newPrice").value=l.price;pendingBarcode=p.barcode||"";}
+$("newName").addEventListener("change",()=>{const p=db.products.find(x=>norm(x.name)===norm($("newName").value));if(p)fillForm(p);});
+function setView(v){view=v;["list","products","stats"].forEach(x=>{$("view-"+x).classList.toggle("hidden",x!==v);$("tab-"+x).className="rounded-xl px-2 py-2 "+(x===v?"bg-forest-700 text-white":"border border-slate-200 bg-white text-slate-600");});render();window.scrollTo(0,0);}
+["list","products","stats"].forEach(x=>$("tab-"+x).addEventListener("click",()=>setView(x)));
+$("prodSearch").addEventListener("input",renderProducts);
+function renderProducts(){const q=norm($("prodSearch").value),ps=db.products.filter(p=>!q||norm(p.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"de"));
+ $("prodEmpty").classList.toggle("hidden",ps.length>0);$("prodItems").innerHTML="";
+ ps.forEach(p=>{const c=category(p.category),pr=p.prices.map(x=>x.price),last=pr.at(-1),row=document.createElement("div");
+  row.className=`flex items-center gap-2 rounded-2xl border border-slate-200 ${c.color} p-3`;
+  row.innerHTML=`<span class="text-xl">${c.icon}</span><div class="min-w-0 flex-1"><p class="break-words font-semibold">${esc(p.name)}</p><p class="text-xs text-slate-500">${last?eur(last)+(pr.length>1?` · min ${eur(Math.min(...pr))} · max ${eur(Math.max(...pr))}`:""):"kein Preis"}${p.barcode?" · "+esc(p.barcode):""}</p></div><button class="add rounded-lg bg-forest-700 px-3 py-2 text-xs font-bold text-white">＋ Liste</button><button class="pe p-2" title="Preis ändern">💶</button><button class="pd p-2" title="Löschen">🗑️</button>`;
+  row.querySelector(".add").addEventListener("click",()=>{addItem({name:p.name,quantity:1,unit:p.unit,category:p.category,price:last,barcode:p.barcode});save();render();notify(`„${p.name}“ zu ${current().name} hinzugefügt.`);});
+  row.querySelector(".pe").addEventListener("click",()=>{const v=prompt("Neuer Preis je Einheit in €:",last??"");if(v===null)return;const n=Number(v.replace(",","."));if(!(n>0)){notify("Ungültiger Preis.");return;}learn({name:p.name,price:n});save();render();});
+  row.querySelector(".pd").addEventListener("click",()=>{if(confirm(`Produkt „${p.name}“ löschen?`)){db.products=db.products.filter(x=>x.id!==p.id);save();render();}});
+  $("prodItems").append(row);});}
+$("finishBtn").addEventListener("click",()=>{const l=current(),done=l.items.filter(x=>x.done);if(!done.length){notify("Hake zuerst gekaufte Artikel ab.");return;}
+ const store=prompt("Geschäft (optional):","");if(store===null)return;const total=done.reduce((t,x)=>t+(x.price||0)*x.quantity,0);
+ db.history.push({id:uid(),date:new Date().toISOString(),list:l.name,store:store.trim(),total,items:done.map(x=>({name:x.name,quantity:x.quantity,unit:x.unit,category:x.category,price:x.price||null}))});
+ l.items=l.items.filter(x=>!x.done);save();render();notify(`Einkauf gespeichert (${eur(total)}).`);});
+function bars(rows){const m=Math.max(...rows.map(r=>r[1]),0.01);return rows.map(r=>`<div class="mb-2"><div class="flex justify-between text-xs"><span>${r[0]}</span><span class="font-semibold">${r[2]}</span></div><div class="h-2 rounded-full bg-slate-100"><div class="h-2 rounded-full bg-forest-600" style="width:${r[1]/m*100}%"></div></div></div>`).join("")||'<p class="text-xs text-slate-400">Noch keine Daten.</p>';}
+function renderStats(){const h=db.history,total=h.reduce((t,x)=>t+x.total,0),mon={},cat={},top={};
+ h.forEach(t=>{const k=t.date.slice(0,7);mon[k]=(mon[k]||0)+t.total;t.items.forEach(i=>{cat[i.category]=(cat[i.category]||0)+(i.price||0)*i.quantity;const n=norm(i.name);top[n]=top[n]||[i.name,0];top[n][1]++;});});
+ const months=Object.keys(mon).sort().slice(-6).map(k=>{const[y,m]=k.split("-");return[`${m}/${y}`,mon[k],eur(mon[k])];}),
+ cats=CATEGORIES.filter(c=>cat[c.id]>0).sort((a,b)=>cat[b.id]-cat[a.id]).map(c=>[`${c.icon} ${c.name}`,cat[c.id],eur(cat[c.id])]),
+ tops=Object.values(top).sort((a,b)=>b[1]-a[1]).slice(0,8).map(t=>[esc(t[0]),t[1],t[1]+"×"]),
+ box=(t,b)=>`<section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft"><h2 class="mb-3 font-bold">${t}</h2>${b}</section>`;
+ $("view-stats").innerHTML=`<div class="grid grid-cols-3 gap-2 text-center"><div class="rounded-2xl bg-white p-3 shadow-soft"><p class="text-lg font-black">${h.length}</p><p class="text-xs text-slate-500">Einkäufe</p></div><div class="rounded-2xl bg-white p-3 shadow-soft"><p class="text-lg font-black">${eur(total)}</p><p class="text-xs text-slate-500">Gesamt</p></div><div class="rounded-2xl bg-white p-3 shadow-soft"><p class="text-lg font-black">${eur(h.length?total/h.length:0)}</p><p class="text-xs text-slate-500">Ø pro Einkauf</p></div></div>`+
+ box("Ausgaben pro Monat",bars(months))+box("Ausgaben pro Warengruppe",bars(cats))+box("Häufigste Artikel",bars(tops))+
+ box("Letzte Einkäufe",h.slice(-5).reverse().map(t=>`<div class="mb-2 flex items-center gap-2 text-sm"><div class="min-w-0 flex-1"><p class="font-semibold">${new Date(t.date).toLocaleDateString("de-DE")} · ${esc(t.store||t.list)}</p><p class="text-xs text-slate-500">${t.items.length} Artikel · ${eur(t.total)}</p></div><button data-del="${esc(t.id)}" class="p-2" title="Löschen">🗑️</button></div>`).join("")||'<p class="text-xs text-slate-400">Noch keine Einkäufe. Hake Artikel ab und tippe auf „Einkauf abschließen“.</p>');
+ $("view-stats").querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{if(confirm("Diesen Einkauf aus der Statistik löschen?")){db.history=db.history.filter(x=>x.id!==b.dataset.del);save();render();}}));}
+function loadScanLib(){return new Promise((res,rej)=>{if(window.Html5Qrcode)return res();const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js";s.onload=res;s.onerror=()=>rej(Error("Scanner konnte nicht geladen werden (Internet nötig)."));document.head.append(s);});}
+async function closeScan(){try{if(scanner){await scanner.stop();scanner.clear();}}catch(e){}scanner=null;$("scanModal").classList.add("hidden");$("scanModal").classList.remove("flex");}
+async function onScan(code){await closeScan();pendingBarcode=code;const p=db.products.find(x=>x.barcode===code);if(p){fillForm(p);notify("Bekanntes Produkt: "+p.name);return;}
+ notify("Suche "+code+" …");try{const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands`),d=await r.json(),pr=d.product,nm=pr?[pr.product_name,(pr.brands||"").split(",")[0].trim()].filter(Boolean).join(" – "):"";
+  if(d.status===1&&nm){$("newName").value=nm;notify("Gefunden: "+nm);}else notify("Nicht gefunden – bitte Namen eingeben.");}catch(e){notify("Offline – bitte Namen eingeben.");}$("newName").focus();}
+$("scanBtn").addEventListener("click",async()=>{$("scanModal").classList.remove("hidden");$("scanModal").classList.add("flex");
+ try{await loadScanLib();const F=Html5QrcodeSupportedFormats;scanner=new Html5Qrcode("reader",{verbose:false,formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128]});
+  await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:260,height:140}},onScan,()=>{});}catch(e){await closeScan();notify(String(e.message||e).slice(0,90));}});
+$("closeScan").addEventListener("click",closeScan);
+fillCategories();setView("list");save();
 if("serviceWorker"in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn));
 })();
 </script>
