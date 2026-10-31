@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#166534">
+  <meta name="description" content="Deine private, KI-gestützte Einkaufsliste.">
+  <title>Einkaufsliste</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { forest: { 50:'#f0fdf4', 100:'#dcfce7', 600:'#16a34a', 700:'#15803d', 800:'#166534', 900:'#14532d' } }, boxShadow: { soft:'0 12px 35px rgba(15,23,42,.08)' } } } };
+  </script>
+  <style>
+    html { color-scheme: light; }
+    body { -webkit-tap-highlight-color: transparent; }
+    .safe-bottom { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
+    .item-done { opacity:.58; }
+    .item-done .item-name { text-decoration:line-through; }
+    .spinner { width:18px;height:18px;border:2px solid #bbf7d0;border-top-color:#166534;border-radius:50%;animation:spin .7s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    button:focus-visible,input:focus-visible { outline:3px solid #86efac;outline-offset:2px; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <div class="mx-auto min-h-screen max-w-2xl bg-slate-50">
+    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[.18em] text-forest-700">Dein Einkaufshelfer</p>
+          <h1 class="text-2xl font-black tracking-tight">Einkaufsliste <span aria-hidden="true">🛒</span></h1>
+        </div>
+        <button id="settingsBtn" class="rounded-xl border border-slate-200 p-3 text-xl hover:bg-slate-50" aria-label="Einstellungen">⚙️</button>
+      </div>
+      <div class="mt-4 flex items-center gap-3">
+        <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div id="progressBar" class="h-full rounded-full bg-forest-600 transition-all" style="width:0%"></div></div>
+        <span id="progressText" class="min-w-16 text-right text-xs font-semibold text-slate-500">0 / 0</span>
+      </div>
+    </header>
+
+    <main class="space-y-5 px-4 py-5 safe-bottom">
+      <section class="rounded-3xl bg-gradient-to-br from-forest-800 to-emerald-600 p-5 text-white shadow-soft">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold">Liste aus Bildern erstellen</h2>
+            <p class="mt-1 max-w-sm text-sm text-emerald-50">Lade Einkaufszettel, Rezepte oder Produktlisten hoch. Die KI erkennt Artikel und fasst gleiche Produkte zusammen.</p>
+          </div>
+          <span class="text-3xl" aria-hidden="true">✨</span>
+        </div>
+        <input id="imageInput" type="file" accept="image/*" multiple class="hidden">
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button id="uploadBtn" class="rounded-xl bg-white px-4 py-3 text-sm font-bold text-forest-800 shadow-sm hover:bg-emerald-50">＋ Bilder auswählen</button>
+          <button id="analyzeBtn" disabled class="flex items-center gap-2 rounded-xl bg-emerald-950/30 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Bilder analysieren</button>
+        </div>
+        <p id="uploadStatus" class="mt-3 text-xs text-emerald-100" aria-live="polite">Noch keine Bilder ausgewählt.</p>
+        <div id="previewList" class="mt-3 flex flex-wrap gap-2"></div>
+      </section>
+
+      <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+        <h2 class="font-bold">Artikel manuell hinzufügen</h2>
+        <form id="addForm" class="mt-3 grid grid-cols-12 gap-2">
+          <input id="newName" required maxlength="100" placeholder="Artikel, z. B. Äpfel" class="col-span-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-forest-600 sm:col-span-5">
+          <input id="newQty" type="number" min="0.01" step="any" value="1" aria-label="Menge" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-forest-600 sm:col-span-3">
+          <input id="newUnit" maxlength="30" placeholder="Einheit" aria-label="Einheit, z. B. Stück" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-forest-600 sm:col-span-2">
+          <button class="col-span-4 rounded-xl bg-forest-700 px-3 py-3 text-sm font-bold text-white hover:bg-forest-800 sm:col-span-2" type="submit">Hinzufügen</button>
+        </form>
+      </section>
+
+      <section>
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div><h2 class="text-lg font-extrabold">Deine Artikel</h2><p id="listSubheading" class="text-xs text-slate-500">Alles für den nächsten Einkauf</p></div>
+          <button id="clearDoneBtn" class="text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-red-600">Erledigte löschen</button>
+        </div>
+        <div id="itemsList" class="space-y-2" aria-live="polite"></div>
+        <div id="emptyState" class="rounded-2xl border-2 border-dashed border-slate-200 bg-white px-5 py-10 text-center">
+          <div class="text-4xl">🥑</div><p class="mt-3 font-bold">Deine Liste ist noch leer</p><p class="mt-1 text-sm text-slate-500">Füge Artikel hinzu oder importiere sie aus einem Bild.</p>
+        </div>
+      </section>
+      <p class="px-2 text-center text-xs leading-relaxed text-slate-400">Deine Liste wird auf diesem Gerät gespeichert. Für die Bilderkennung wird das ausgewählte Bild an die Google Gemini API übertragen.</p>
+    </main>
+  </div>
+
+  <!-- Settings modal -->
+  <div id="settingsModal" class="fixed inset-0 z-40 hidden items-end justify-center bg-slate-950/50 p-3 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
+      <div class="flex items-center justify-between"><h2 id="settingsTitle" class="text-lg font-extrabold">Einstellungen</h2><button id="closeSettings" class="rounded-lg p-2 text-xl text-slate-500" aria-label="Schließen">×</button></div>
+      <label for="apiKey" class="mt-5 block text-sm font-bold">Gemini API-Key</label>
+      <input id="apiKey" type="password" autocomplete="off" placeholder="AIza…" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
+      <p class="mt-2 text-xs leading-relaxed text-slate-500">Der Schlüssel wird lokal in diesem Browser gespeichert. Das ist bequem, aber nicht verschlüsselt: Andere Personen mit Zugriff auf dein Gerät bzw. Browserprofil können ihn auslesen. Verwende einen eigenen, eingeschränkten API-Key und teile diese App nicht öffentlich mit deinem Schlüssel.</p>
+      <label for="modelName" class="mt-4 block text-sm font-bold">Gemini-Modell</label>
+      <input id="modelName" value="gemini-2.5-flash" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
+      <div class="mt-5 flex gap-2"><button id="saveSettings" class="flex-1 rounded-xl bg-forest-700 px-4 py-3 font-bold text-white">Speichern</button><button id="removeKey" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600">Key löschen</button></div>
+      <p class="mt-3 text-xs text-slate-400">API-Key erstellen/verwalten: <a class="underline" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.</p>
+    </div>
+  </div>
+
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 hidden -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl" role="status"></div>
+
+<script>
+(() => {
+  "use strict";
+  const STORAGE_LIST = "einkaufsliste.items.v1";
+  const STORAGE_KEY = "einkaufsliste.geminiKey.v1";
+  const STORAGE_MODEL = "einkaufsliste.geminiModel.v1";
+  let items = loadItems();
+  let selectedFiles = [];
+  let toastTimer;
+
+  const $ = id => document.getElementById(id);
+  const escapeHtml = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  function loadItems() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_LIST) || "[]");
+      return Array.isArray(parsed) ? parsed.filter(x => x && typeof x.name === "string") : [];
+    } catch { return []; }
+  }
+  function persist() { localStorage.setItem(STORAGE_LIST, JSON.stringify(items)); }
+  function notify(message) {
+    $("toast").textContent = message; $("toast").classList.remove("hidden");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.add("hidden"), 2800);
+  }
+  function normalized(value) {
+    return String(value).trim().toLocaleLowerCase("de-DE").replace(/\s+/g, " ");
+  }
+  function formatQty(value) {
+    return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(Number(value) || 0);
+  }
+  function render() {
+    const open = items.filter(x => !x.done), done = items.filter(x => x.done);
+    $("progressText").textContent = `${done.length} / ${items.length}`;
+    $("progressBar").style.width = items.length ? `${done.length / items.length * 100}%` : "0%";
+    $("listSubheading").textContent = `${open.length} offen · ${done.length} erledigt`;
+    $("emptyState").classList.toggle("hidden", items.length > 0);
+    $("itemsList").innerHTML = "";
+    const renderGroup = (arr, heading) => {
+      if (!arr.length) return;
+      const label = document.createElement("p");
+      label.className = "px-1 pt-2 text-xs font-bold uppercase tracking-wider text-slate-400";
+      label.textContent = heading; $("itemsList").append(label);
+      arr.forEach(item => {
+        const row = document.createElement("div");
+        row.className = `flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm ${item.done ? "item-done" : ""}`;
+        const qty = `${formatQty(item.quantity)}${item.unit ? " " + escapeHtml(item.unit) : ""}`;
+        row.innerHTML = `
+          <input type="checkbox" class="h-5 w-5 shrink-0 accent-green-700" aria-label="${item.done ? "Als offen markieren" : "Als erledigt markieren"}" ${item.done ? "checked" : ""}>
+          <div class="min-w-0 flex-1"><p class="item-name break-words font-semibold">${escapeHtml(item.name)}</p><p class="text-xs text-slate-500">${qty}</p></div>
+          <button class="edit rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-800" aria-label="Artikel bearbeiten" title="Bearbeiten">✏️</button>
+          <button class="delete rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label="Artikel löschen" title="Löschen">🗑️</button>`;
+        row.querySelector('input').addEventListener("change", e => { item.done = e.target.checked; persist(); render(); });
+        row.querySelector(".edit").addEventListener("click", () => editItem(item.id));
+        row.querySelector(".delete").addEventListener("click", () => { items = items.filter(x => x.id !== item.id); persist(); render(); });
+        $("itemsList").append(row);
+      });
+    };
+    renderGroup(open, "Noch zu besorgen"); renderGroup(done, "Erledigt");
+  }
+  function addOrAggregate(name, quantity, unit) {
+    name = String(name || "").trim(); unit = String(unit || "").trim();
+    quantity = Number(quantity);
+    if (!name || !Number.isFinite(quantity) || quantity <= 0) return false;
+    const existing = items.find(x => !x.done && normalized(x.name) === normalized(name) && normalized(x.unit || "") === normalized(unit));
+    if (existing) existing.quantity = Number(existing.quantity || 0) + quantity;
+    else items.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, name, quantity, unit, done: false });
+    return true;
+  }
+  function editItem(id) {
+    const item = items.find(x => x.id === id); if (!item) return;
+    const name = prompt("Artikelname:", item.name); if (name === null) return;
+    if (!name.trim()) { notify("Der Artikelname darf nicht leer sein."); return; }
+    const quantityRaw = prompt("Menge:", String(item.quantity)); if (quantityRaw === null) return;
+    const quantity = Number(quantityRaw.replace(",", "."));
+    if (!Number.isFinite(quantity) || quantity <= 0) { notify("Bitte eine gültige Menge eingeben."); return; }
+    const unit = prompt("Einheit (z. B. Stück, kg, Packung):", item.unit || ""); if (unit === null) return;
+    item.name = name.trim(); item.quantity = quantity; item.unit = unit.trim();
+    // Merge duplicates created by editing.
+    const duplicate = items.find(x => x.id !== id && !x.done && !item.done && normalized(x.name) === normalized(item.name) && normalized(x.unit || "") === normalized(item.unit || ""));
+    if (duplicate) { duplicate.quantity = Number(duplicate.quantity) + Number(item.quantity); items = items.filter(x => x.id !== id); }
+    persist(); render();
+  }
+
+  $("addForm").addEventListener("submit", e => {
+    e.preventDefault();
+    if (!addOrAggregate($("newName").value, $("newQty").value, $("newUnit").value)) return;
+    $("newName").value = ""; $("newQty").value = "1"; $("newUnit").value = "";
+    persist(); render(); notify("Artikel hinzugefügt.");
+  });
+  $("clearDoneBtn").addEventListener("click", () => {
+    const count = items.filter(x => x.done).length;
+    if (!count) { notify("Keine erledigten Artikel vorhanden."); return; }
+    items = items.filter(x => !x.done); persist(); render(); notify(`${count} erledigte Artikel gelöscht.`);
+  });
+
+  $("uploadBtn").addEventListener("click", () => $("imageInput").click());
+  $("imageInput").addEventListener("change", e => {
+    const incoming = Array.from(e.target.files || []).filter(f => f.type.startsWith("image/"));
+    selectedFiles = [...selectedFiles, ...incoming];
+    e.target.value = "";
+    updatePreviews();
+  });
+  function updatePreviews() {
+    $("previewList").innerHTML = "";
+    selectedFiles.forEach((file, i) => {
+      const chip = document.createElement("span");
+      chip.className = "inline-flex max-w-full items-center gap-2 rounded-lg bg-white/15 px-2 py-1 text-xs text-white";
+      chip.innerHTML = `<span class="max-w-36 truncate">${escapeHtml(file.name)}</span><button type="button" aria-label="Bild entfernen" class="font-bold">×</button>`;
+      chip.querySelector("button").addEventListener("click", () => { selectedFiles.splice(i, 1); updatePreviews(); });
+      $("previewList").append(chip);
+    });
+    $("uploadStatus").textContent = selectedFiles.length ? `${selectedFiles.length} Bild(er) bereit zur Analyse.` : "Noch keine Bilder ausgewählt.";
+    $("analyzeBtn").disabled = !selectedFiles.length;
+  }
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.onerror = () => reject(new Error(`Datei konnte nicht gelesen werden: ${file.name}`));
+      reader.readAsDataURL(file);
+    });
+  }
+  function extractJson(text) {
+    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    try { return JSON.parse(cleaned); } catch {
+      const start = cleaned.indexOf("{"), end = cleaned.lastIndexOf("}");
+      if (start >= 0 && end > start) return JSON.parse(cleaned.slice(start, end + 1));
+      throw new Error("Die KI-Antwort enthielt kein gültiges JSON.");
+    }
+  }
+  async function analyzeImage(file, apiKey, model) {
+    const base64 = await fileToBase64(file);
+    const prompt = `Analysiere dieses Bild als Einkaufszettel, Rezept oder Produktliste. Extrahiere ausschließlich tatsächlich erkennbare Einkaufsartikel. Gib für jeden Artikel name, quantity (positive Zahl) und unit (kurzer Einheitenstring; leer wenn nicht erkennbar) zurück. Interpretiere Rezeptzutaten als Einkaufsartikel. Ignoriere Zubereitungsschritte, Preise, Werbung und irrelevante Texte. Wenn keine Menge angegeben ist, setze quantity auf 1 und unit auf "Stück" nur wenn sinnvoll, sonst auf "". Fasse innerhalb dieses Bildes identische Artikel mit gleicher Einheit zusammen. Antworte ausschließlich mit JSON im Format {"items":[{"name":"Äpfel","quantity":2,"unit":"Stück"}]}.`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const response = await fetch(url, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: file.type, data: base64 } }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT", properties: {
+              items: { type: "ARRAY", items: { type: "OBJECT", properties: {
+                name: { type: "STRING" }, quantity: { type: "NUMBER" }, unit: { type: "STRING" }
+              }, required: ["name", "quantity", "unit"] } }
+            }, required: ["items"]
+          }
+        }
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const detail = data?.error?.message || `HTTP ${response.status}`;
+      throw new Error(`${file.name}: ${detail}`);
+    }
+    const output = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("");
+    if (!output) throw new Error(`${file.name}: Keine auswertbare Antwort von Gemini.`);
+    const parsed = extractJson(output);
+    if (!Array.isArray(parsed.items)) throw new Error(`${file.name}: JSON enthält keine Artikelliste.`);
+    return parsed.items;
+  }
+  $("analyzeBtn").addEventListener("click", async () => {
+    const apiKey = localStorage.getItem(STORAGE_KEY);
+    const model = (localStorage.getItem(STORAGE_MODEL) || "gemini-2.5-flash").trim();
+    if (!apiKey) { openSettings(); notify("Bitte zuerst deinen Gemini API-Key eintragen."); return; }
+    if (!selectedFiles.length) return;
+    const files = [...selectedFiles];
+    $("analyzeBtn").disabled = true; $("uploadBtn").disabled = true;
+    $("analyzeBtn").innerHTML = '<span class="spinner"></span> Analysiere…';
+    $("uploadStatus").textContent = `Analysiere ${files.length} Bild(er)…`;
+    let added = 0, errors = [];
+    try {
+      for (let i = 0; i < files.length; i++) {
+        $("uploadStatus").textContent = `Bild ${i + 1} von ${files.length}: ${files[i].name}`;
+        try {
+          const extracted = await analyzeImage(files[i], apiKey, model);
+          extracted.forEach(entry => {
+            if (addOrAggregate(entry.name, entry.quantity ?? 1, entry.unit ?? "")) added++;
+          });
+        } catch (err) { errors.push(err.message); }
+      }
+      persist(); render();
+      selectedFiles = []; updatePreviews();
+      notify(`${added} erkannte Artikel verarbeitet.`);
+      $("uploadStatus").textContent = errors.length ? `Fertig mit ${errors.length} Fehler(n).` : "Alle Bilder erfolgreich analysiert.";
+      if (errors.length) alert("Bei einigen Bildern gab es Probleme:\n\n" + errors.join("\n\n"));
+    } finally {
+      $("analyzeBtn").disabled = !selectedFiles.length;
+      $("analyzeBtn").textContent = "Bilder analysieren";
+      $("uploadBtn").disabled = false;
+    }
+  });
+
+  function openSettings() {
+    $("apiKey").value = localStorage.getItem(STORAGE_KEY) || "";
+    $("modelName").value = localStorage.getItem(STORAGE_MODEL) || "gemini-2.5-flash";
+    $("settingsModal").classList.remove("hidden"); $("settingsModal").classList.add("flex");
+  }
+  function closeSettings() { $("settingsModal").classList.add("hidden"); $("settingsModal").classList.remove("flex"); }
+  $("settingsBtn").addEventListener("click", openSettings);
+  $("closeSettings").addEventListener("click", closeSettings);
+  $("settingsModal").addEventListener("click", e => { if (e.target === $("settingsModal")) closeSettings(); });
+  $("saveSettings").addEventListener("click", () => {
+    const key = $("apiKey").value.trim(), model = $("modelName").value.trim() || "gemini-2.5-flash";
+    if (key) localStorage.setItem(STORAGE_KEY, key); else localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(STORAGE_MODEL, model); closeSettings(); notify("Einstellungen gespeichert.");
+  });
+  $("removeKey").addEventListener("click", () => { localStorage.removeItem(STORAGE_KEY); $("apiKey").value = ""; notify("API-Key gelöscht."); });
+
+  render();
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(err => console.warn("Service Worker:", err)));
+  }
+})();
+</script>
+</body>
+</html>
