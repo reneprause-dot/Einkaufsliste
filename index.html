@@ -1,315 +1,189 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#166534">
-  <meta name="description" content="Deine private, KI-gestützte Einkaufsliste.">
-  <title>Einkaufsliste</title>
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./icon.svg" type="image/svg+xml">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = { theme: { extend: { colors: { forest: { 50:'#f0fdf4', 100:'#dcfce7', 600:'#16a34a', 700:'#15803d', 800:'#166534', 900:'#14532d' } }, boxShadow: { soft:'0 12px 35px rgba(15,23,42,.08)' } } } };
-  </script>
-  <style>
-    html { color-scheme: light; }
-    body { -webkit-tap-highlight-color: transparent; }
-    .safe-bottom { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
-    .item-done { opacity:.58; }
-    .item-done .item-name { text-decoration:line-through; }
-    .spinner { width:18px;height:18px;border:2px solid #bbf7d0;border-top-color:#166534;border-radius:50%;animation:spin .7s linear infinite; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    button:focus-visible,input:focus-visible { outline:3px solid #86efac;outline-offset:2px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#166534">
+<meta name="description" content="Deine private, KI-gestützte Einkaufslisten-App.">
+<title>Einkaufsliste V2</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{forest:{50:'#f0fdf4',100:'#dcfce7',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d'}},boxShadow:{soft:'0 12px 35px rgba(15,23,42,.08)'}}}};</script>
+<style>
+html{color-scheme:light}body{-webkit-tap-highlight-color:transparent}.safe-bottom{padding-bottom:max(1.25rem,env(safe-area-inset-bottom))}
+.spinner{width:18px;height:18px;border:2px solid #bbf7d0;border-top-color:#166534;border-radius:50%;animation:spin .7s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #86efac;outline-offset:2px}
+.item-done{opacity:.55}.item-done .item-name{text-decoration:line-through}
+.category-chip{white-space:nowrap}
+</style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800">
-  <div class="mx-auto min-h-screen max-w-2xl bg-slate-50">
-    <header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-xs font-bold uppercase tracking-[.18em] text-forest-700">Dein Einkaufshelfer</p>
-          <h1 class="text-2xl font-black tracking-tight">Einkaufsliste <span aria-hidden="true">🛒</span></h1>
-        </div>
-        <button id="settingsBtn" class="rounded-xl border border-slate-200 p-3 text-xl hover:bg-slate-50" aria-label="Einstellungen">⚙️</button>
-      </div>
-      <div class="mt-4 flex items-center gap-3">
-        <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div id="progressBar" class="h-full rounded-full bg-forest-600 transition-all" style="width:0%"></div></div>
-        <span id="progressText" class="min-w-16 text-right text-xs font-semibold text-slate-500">0 / 0</span>
-      </div>
-    </header>
+<div class="mx-auto min-h-screen max-w-2xl bg-slate-50">
+<header class="sticky top-0 z-20 border-b border-slate-200/80 bg-white/95 px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur">
+ <div class="flex items-center justify-between">
+  <div><p class="text-xs font-bold uppercase tracking-[.18em] text-forest-700">Dein Einkaufshelfer · V2</p><h1 class="text-2xl font-black tracking-tight">Einkaufsliste <span>🛒</span></h1></div>
+  <button id="settingsBtn" class="rounded-xl border border-slate-200 p-3 text-xl hover:bg-slate-50" aria-label="Einstellungen">⚙️</button>
+ </div>
+ <div class="mt-4 flex items-center gap-3"><div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100"><div id="progressBar" class="h-full rounded-full bg-forest-600 transition-all" style="width:0%"></div></div><span id="progressText" class="min-w-16 text-right text-xs font-semibold text-slate-500">0 / 0</span></div>
+</header>
+<main class="space-y-5 px-4 py-5 safe-bottom">
+ <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+  <div class="flex items-center justify-between gap-2"><div><p class="text-xs font-bold uppercase tracking-wider text-forest-700">Deine Listen</p><h2 class="text-lg font-extrabold">Was steht heute an?</h2></div><button id="newListBtn" class="rounded-xl bg-forest-700 px-3 py-2.5 text-sm font-bold text-white">＋ Neue Liste</button></div>
+  <div class="mt-3 flex gap-2"><select id="listSelect" class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-semibold"></select><button id="renameListBtn" class="rounded-xl border border-slate-200 px-3 text-sm" title="Liste umbenennen">✏️</button><button id="deleteListBtn" class="rounded-xl border border-slate-200 px-3 text-sm" title="Liste löschen">🗑️</button></div>
+ </section>
 
-    <main class="space-y-5 px-4 py-5 safe-bottom">
-      <section class="rounded-3xl bg-gradient-to-br from-forest-800 to-emerald-600 p-5 text-white shadow-soft">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h2 class="text-lg font-bold">Liste aus Bildern erstellen</h2>
-            <p class="mt-1 max-w-sm text-sm text-emerald-50">Lade Einkaufszettel, Rezepte oder Produktlisten hoch. Die KI erkennt Artikel und fasst gleiche Produkte zusammen.</p>
-          </div>
-          <span class="text-3xl" aria-hidden="true">✨</span>
-        </div>
-        <input id="imageInput" type="file" accept="image/*" multiple class="hidden">
-        <div class="mt-4 flex flex-wrap gap-2">
-          <button id="uploadBtn" class="rounded-xl bg-white px-4 py-3 text-sm font-bold text-forest-800 shadow-sm hover:bg-emerald-50">＋ Bilder auswählen</button>
-          <button id="analyzeBtn" disabled class="flex items-center gap-2 rounded-xl bg-emerald-950/30 px-4 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">Bilder analysieren</button>
-        </div>
-        <p id="uploadStatus" class="mt-3 text-xs text-emerald-100" aria-live="polite">Noch keine Bilder ausgewählt.</p>
-        <div id="previewList" class="mt-3 flex flex-wrap gap-2"></div>
-      </section>
+ <section class="rounded-3xl bg-gradient-to-br from-forest-800 to-emerald-600 p-5 text-white shadow-soft">
+  <div class="flex items-start justify-between gap-3"><div><h2 class="text-lg font-bold">Liste aus Bildern erstellen</h2><p class="mt-1 max-w-sm text-sm text-emerald-50">Einkaufszettel, Rezepte oder Produktlisten fotografieren. Die KI erkennt Artikel, Mengen und Warengruppen.</p></div><span class="text-3xl">✨</span></div>
+  <input id="imageInput" type="file" accept="image/*" multiple class="hidden">
+  <div class="mt-4 flex flex-wrap gap-2"><button id="uploadBtn" class="rounded-xl bg-white px-4 py-3 text-sm font-bold text-forest-800">＋ Bilder auswählen</button><button id="analyzeBtn" disabled class="flex items-center gap-2 rounded-xl bg-emerald-950/30 px-4 py-3 text-sm font-bold text-white disabled:opacity-40">Bilder analysieren</button></div>
+  <p id="uploadStatus" class="mt-3 text-xs text-emerald-100" aria-live="polite">Noch keine Bilder ausgewählt.</p><div id="previewList" class="mt-3 flex flex-wrap gap-2"></div>
+ </section>
 
-      <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
-        <h2 class="font-bold">Artikel manuell hinzufügen</h2>
-        <form id="addForm" class="mt-3 grid grid-cols-12 gap-2">
-          <input id="newName" required maxlength="100" placeholder="Artikel, z. B. Äpfel" class="col-span-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-forest-600 sm:col-span-5">
-          <input id="newQty" type="number" min="0.01" step="any" value="1" aria-label="Menge" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-forest-600 sm:col-span-3">
-          <input id="newUnit" maxlength="30" placeholder="Einheit" aria-label="Einheit, z. B. Stück" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none focus:border-forest-600 sm:col-span-2">
-          <button class="col-span-4 rounded-xl bg-forest-700 px-3 py-3 text-sm font-bold text-white hover:bg-forest-800 sm:col-span-2" type="submit">Hinzufügen</button>
-        </form>
-      </section>
+ <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+  <h2 class="font-bold">Artikel hinzufügen</h2>
+  <form id="addForm" class="mt-3 grid grid-cols-12 gap-2">
+   <input id="newName" required maxlength="100" placeholder="Artikel, z. B. Äpfel" class="col-span-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-5">
+   <input id="newQty" type="number" min="0.01" step="any" value="1" aria-label="Menge" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-2">
+   <input id="newUnit" maxlength="30" placeholder="Einheit" aria-label="Einheit" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-2">
+   <select id="newCategory" aria-label="Warengruppe" class="col-span-4 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-2 py-3 text-xs sm:col-span-3"></select>
+   <button class="col-span-12 rounded-xl bg-forest-700 px-3 py-3 text-sm font-bold text-white hover:bg-forest-800" type="submit">＋ Zur aktuellen Liste hinzufügen</button>
+  </form>
+ </section>
 
-      <section>
-        <div class="mb-3 flex items-center justify-between gap-3">
-          <div><h2 class="text-lg font-extrabold">Deine Artikel</h2><p id="listSubheading" class="text-xs text-slate-500">Alles für den nächsten Einkauf</p></div>
-          <button id="clearDoneBtn" class="text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-red-600">Erledigte löschen</button>
-        </div>
-        <div id="itemsList" class="space-y-2" aria-live="polite"></div>
-        <div id="emptyState" class="rounded-2xl border-2 border-dashed border-slate-200 bg-white px-5 py-10 text-center">
-          <div class="text-4xl">🥑</div><p class="mt-3 font-bold">Deine Liste ist noch leer</p><p class="mt-1 text-sm text-slate-500">Füge Artikel hinzu oder importiere sie aus einem Bild.</p>
-        </div>
-      </section>
-      <p class="px-2 text-center text-xs leading-relaxed text-slate-400">Deine Liste wird auf diesem Gerät gespeichert. Für die Bilderkennung wird das ausgewählte Bild an die Google Gemini API übertragen.</p>
-    </main>
-  </div>
+ <section>
+  <div class="mb-3 flex flex-wrap items-end justify-between gap-3"><div><h2 class="text-lg font-extrabold">Deine Artikel</h2><p id="listSubheading" class="text-xs text-slate-500"></p></div><button id="clearDoneBtn" class="text-xs font-semibold text-slate-500 underline decoration-slate-300 underline-offset-4">Erledigte löschen</button></div>
+  <div class="mb-3 flex gap-2 overflow-x-auto pb-1"><button id="allFilter" class="category-chip rounded-full bg-forest-700 px-4 py-2 text-xs font-bold text-white">Alle Artikel</button><button id="favFilter" class="category-chip rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600">★ Favoriten</button></div>
+  <div id="itemsList" class="space-y-3" aria-live="polite"></div>
+  <div id="emptyState" class="rounded-2xl border-2 border-dashed border-slate-200 bg-white px-5 py-10 text-center"><div class="text-4xl">🥑</div><p class="mt-3 font-bold">Diese Liste ist noch leer</p><p class="mt-1 text-sm text-slate-500">Füge Artikel hinzu oder importiere sie aus einem Bild.</p></div>
+ </section>
+ <p class="px-2 text-center text-xs leading-relaxed text-slate-400">Alle Listen und Artikel bleiben lokal auf diesem Gerät gespeichert. Für die KI-Bilderkennung werden Bilder an Google Gemini übertragen.</p>
+</main>
+</div>
 
-  <!-- Settings modal -->
-  <div id="settingsModal" class="fixed inset-0 z-40 hidden items-end justify-center bg-slate-950/50 p-3 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-    <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
-      <div class="flex items-center justify-between"><h2 id="settingsTitle" class="text-lg font-extrabold">Einstellungen</h2><button id="closeSettings" class="rounded-lg p-2 text-xl text-slate-500" aria-label="Schließen">×</button></div>
-      <label for="apiKey" class="mt-5 block text-sm font-bold">Gemini API-Key</label>
-      <input id="apiKey" type="password" autocomplete="off" placeholder="AIza…" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
-      <p class="mt-2 text-xs leading-relaxed text-slate-500">Der Schlüssel wird lokal in diesem Browser gespeichert. Das ist bequem, aber nicht verschlüsselt: Andere Personen mit Zugriff auf dein Gerät bzw. Browserprofil können ihn auslesen. Verwende einen eigenen, eingeschränkten API-Key und teile diese App nicht öffentlich mit deinem Schlüssel.</p>
-      <label for="modelName" class="mt-4 block text-sm font-bold">Gemini-Modell</label>
-      <input id="modelName" value="gemini-2.5-flash" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
-      <div class="mt-5 flex gap-2"><button id="saveSettings" class="flex-1 rounded-xl bg-forest-700 px-4 py-3 font-bold text-white">Speichern</button><button id="removeKey" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600">Key löschen</button></div>
-      <p class="mt-3 text-xs text-slate-400">API-Key erstellen/verwalten: <a class="underline" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>.</p>
-    </div>
-  </div>
-
-  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 hidden -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl" role="status"></div>
-
+<div id="settingsModal" class="fixed inset-0 z-40 hidden items-end justify-center bg-slate-950/50 p-3 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+ <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
+  <div class="flex items-center justify-between"><h2 id="settingsTitle" class="text-lg font-extrabold">Einstellungen</h2><button id="closeSettings" class="p-2 text-xl text-slate-500">×</button></div>
+  <label for="apiKey" class="mt-5 block text-sm font-bold">Gemini API-Key</label><input id="apiKey" type="password" autocomplete="off" placeholder="AIza…" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
+  <p class="mt-2 text-xs leading-relaxed text-slate-500">Der Key liegt lokal und unverschlüsselt im Browser-Speicher. Verwende einen eigenen API-Key, beschränke ihn nach Möglichkeit und veröffentliche keinen Key in einem öffentlichen Repository.</p>
+  <label for="modelName" class="mt-4 block text-sm font-bold">Gemini-Modell</label><input id="modelName" value="gemini-2.5-flash" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm">
+  <div class="mt-5 flex gap-2"><button id="saveSettings" class="flex-1 rounded-xl bg-forest-700 px-4 py-3 font-bold text-white">Speichern</button><button id="removeKey" class="rounded-xl border border-slate-200 px-4 py-3 text-sm">Key löschen</button></div>
+  <p class="mt-3 text-xs text-slate-400"><a class="underline" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio – API-Key verwalten</a></p>
+ </div>
+</div>
+<div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 hidden -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-xl" role="status"></div>
 <script>
 (() => {
-  "use strict";
-  const STORAGE_LIST = "einkaufsliste.items.v1";
-  const STORAGE_KEY = "einkaufsliste.geminiKey.v1";
-  const STORAGE_MODEL = "einkaufsliste.geminiModel.v1";
-  let items = loadItems();
-  let selectedFiles = [];
-  let toastTimer;
-
-  const $ = id => document.getElementById(id);
-  const escapeHtml = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  function loadItems() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_LIST) || "[]");
-      return Array.isArray(parsed) ? parsed.filter(x => x && typeof x.name === "string") : [];
-    } catch { return []; }
-  }
-  function persist() { localStorage.setItem(STORAGE_LIST, JSON.stringify(items)); }
-  function notify(message) {
-    $("toast").textContent = message; $("toast").classList.remove("hidden");
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.add("hidden"), 2800);
-  }
-  function normalized(value) {
-    return String(value).trim().toLocaleLowerCase("de-DE").replace(/\s+/g, " ");
-  }
-  function formatQty(value) {
-    return new Intl.NumberFormat("de-DE", { maximumFractionDigits: 2 }).format(Number(value) || 0);
-  }
-  function render() {
-    const open = items.filter(x => !x.done), done = items.filter(x => x.done);
-    $("progressText").textContent = `${done.length} / ${items.length}`;
-    $("progressBar").style.width = items.length ? `${done.length / items.length * 100}%` : "0%";
-    $("listSubheading").textContent = `${open.length} offen · ${done.length} erledigt`;
-    $("emptyState").classList.toggle("hidden", items.length > 0);
-    $("itemsList").innerHTML = "";
-    const renderGroup = (arr, heading) => {
-      if (!arr.length) return;
-      const label = document.createElement("p");
-      label.className = "px-1 pt-2 text-xs font-bold uppercase tracking-wider text-slate-400";
-      label.textContent = heading; $("itemsList").append(label);
-      arr.forEach(item => {
-        const row = document.createElement("div");
-        row.className = `flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm ${item.done ? "item-done" : ""}`;
-        const qty = `${formatQty(item.quantity)}${item.unit ? " " + escapeHtml(item.unit) : ""}`;
-        row.innerHTML = `
-          <input type="checkbox" class="h-5 w-5 shrink-0 accent-green-700" aria-label="${item.done ? "Als offen markieren" : "Als erledigt markieren"}" ${item.done ? "checked" : ""}>
-          <div class="min-w-0 flex-1"><p class="item-name break-words font-semibold">${escapeHtml(item.name)}</p><p class="text-xs text-slate-500">${qty}</p></div>
-          <button class="edit rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-800" aria-label="Artikel bearbeiten" title="Bearbeiten">✏️</button>
-          <button class="delete rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label="Artikel löschen" title="Löschen">🗑️</button>`;
-        row.querySelector('input').addEventListener("change", e => { item.done = e.target.checked; persist(); render(); });
-        row.querySelector(".edit").addEventListener("click", () => editItem(item.id));
-        row.querySelector(".delete").addEventListener("click", () => { items = items.filter(x => x.id !== item.id); persist(); render(); });
-        $("itemsList").append(row);
-      });
-    };
-    renderGroup(open, "Noch zu besorgen"); renderGroup(done, "Erledigt");
-  }
-  function addOrAggregate(name, quantity, unit) {
-    name = String(name || "").trim(); unit = String(unit || "").trim();
-    quantity = Number(quantity);
-    if (!name || !Number.isFinite(quantity) || quantity <= 0) return false;
-    const existing = items.find(x => !x.done && normalized(x.name) === normalized(name) && normalized(x.unit || "") === normalized(unit));
-    if (existing) existing.quantity = Number(existing.quantity || 0) + quantity;
-    else items.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`, name, quantity, unit, done: false });
-    return true;
-  }
-  function editItem(id) {
-    const item = items.find(x => x.id === id); if (!item) return;
-    const name = prompt("Artikelname:", item.name); if (name === null) return;
-    if (!name.trim()) { notify("Der Artikelname darf nicht leer sein."); return; }
-    const quantityRaw = prompt("Menge:", String(item.quantity)); if (quantityRaw === null) return;
-    const quantity = Number(quantityRaw.replace(",", "."));
-    if (!Number.isFinite(quantity) || quantity <= 0) { notify("Bitte eine gültige Menge eingeben."); return; }
-    const unit = prompt("Einheit (z. B. Stück, kg, Packung):", item.unit || ""); if (unit === null) return;
-    item.name = name.trim(); item.quantity = quantity; item.unit = unit.trim();
-    // Merge duplicates created by editing.
-    const duplicate = items.find(x => x.id !== id && !x.done && !item.done && normalized(x.name) === normalized(item.name) && normalized(x.unit || "") === normalized(item.unit || ""));
-    if (duplicate) { duplicate.quantity = Number(duplicate.quantity) + Number(item.quantity); items = items.filter(x => x.id !== id); }
-    persist(); render();
-  }
-
-  $("addForm").addEventListener("submit", e => {
-    e.preventDefault();
-    if (!addOrAggregate($("newName").value, $("newQty").value, $("newUnit").value)) return;
-    $("newName").value = ""; $("newQty").value = "1"; $("newUnit").value = "";
-    persist(); render(); notify("Artikel hinzugefügt.");
+"use strict";
+const DB_KEY="einkaufsliste.v2.data", KEY_KEY="einkaufsliste.geminiKey.v1", MODEL_KEY="einkaufsliste.geminiModel.v1";
+const CATEGORIES=[
+ {id:"obst",name:"Obst & Gemüse",icon:"🥑",color:"bg-lime-50"},
+ {id:"backwaren",name:"Backwaren",icon:"🥖",color:"bg-amber-50"},
+ {id:"milch",name:"Milchprodukte & Eier",icon:"🥛",color:"bg-sky-50"},
+ {id:"fleisch",name:"Fleisch & Fisch",icon:"🥩",color:"bg-rose-50"},
+ {id:"trocken",name:"Vorrat & Konserven",icon:"🥫",color:"bg-orange-50"},
+ {id:"getraenke",name:"Getränke",icon:"🥤",color:"bg-cyan-50"},
+ {id:"tiefkuehl",name:"Tiefkühl",icon:"🧊",color:"bg-blue-50"},
+ {id:"haushalt",name:"Haushalt",icon:"🧽",color:"bg-violet-50"},
+ {id:"drogerie",name:"Drogerie",icon:"🧴",color:"bg-fuchsia-50"},
+ {id:"sonstiges",name:"Sonstiges",icon:"🛍️",color:"bg-slate-100"}
+];
+const $=id=>document.getElementById(id);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random()}`;
+const norm=s=>String(s||"").trim().toLocaleLowerCase("de-DE").replace(/\s+/g," ");
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let db=loadDB(),selectedFiles=[],favoritesOnly=false,toastTimer;
+function freshDB(){const id=uid();return{version:2,currentListId:id,lists:[{id,name:"Wocheneinkauf",items:[]}]};}
+function loadDB(){try{const d=JSON.parse(localStorage.getItem(DB_KEY)||"null");if(d&&Array.isArray(d.lists)&&d.lists.length){d.lists.forEach(l=>{if(!Array.isArray(l.items))l.items=[]});if(!d.lists.some(l=>l.id===d.currentListId))d.currentListId=d.lists[0].id;return d;}}catch(e){console.warn(e)}const migrated=freshDB();try{const old=JSON.parse(localStorage.getItem("einkaufsliste.items.v1")||"[]");if(Array.isArray(old)){migrated.lists[0].items=old.map(x=>({id:x.id||uid(),name:String(x.name||"Artikel"),quantity:Number(x.quantity)||1,unit:String(x.unit||""),category:"sonstiges",done:!!x.done,favorite:false}));}}catch(e){console.warn("Migration der alten Einkaufsliste nicht möglich",e)}return migrated;}
+function save(){localStorage.setItem(DB_KEY,JSON.stringify(db));}
+function current(){return db.lists.find(l=>l.id===db.currentListId)||db.lists[0];}
+function category(id){return CATEGORIES.find(c=>c.id===id)||CATEGORIES.at(-1);}
+function notify(msg){$("toast").textContent=msg;$("toast").classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.add("hidden"),2600);}
+function fillCategories(){ $("newCategory").innerHTML=CATEGORIES.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join(""); }
+function renderLists(){const sel=$("listSelect");sel.innerHTML=db.lists.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("");sel.value=db.currentListId;}
+function render(){
+ renderLists();const list=current(),items=list.items||[],open=items.filter(x=>!x.done),done=items.filter(x=>x.done);
+ $("progressText").textContent=`${done.length} / ${items.length}`;$("progressBar").style.width=items.length?`${done.length/items.length*100}%`:"0%";
+ $("listSubheading").textContent=`${list.name} · ${open.length} offen · ${done.length} erledigt`;
+ $("emptyState").classList.toggle("hidden",items.length>0 && (!favoritesOnly||items.some(x=>x.favorite)));
+ $("itemsList").innerHTML="";
+ let visible=items.filter(x=>!favoritesOnly||x.favorite);
+ const ordered=CATEGORIES.flatMap(cat=>visible.filter(x=>(x.category||"sonstiges")===cat.id));
+ const groups=[{done:false,label:"Noch zu besorgen"},{done:true,label:"Erledigt"}];
+ groups.forEach(group=>{
+  const groupItems=ordered.filter(x=>!!x.done===group.done);if(!groupItems.length)return;
+  const h=document.createElement("p");h.className="px-1 pt-2 text-xs font-bold uppercase tracking-wider text-slate-400";h.textContent=group.label;$("itemsList").append(h);
+  CATEGORIES.forEach(cat=>{
+   const subset=groupItems.filter(x=>(x.category||"sonstiges")===cat.id);if(!subset.length)return;
+   const wrap=document.createElement("div");wrap.className="space-y-2";
+   const heading=document.createElement("div");heading.className="flex items-center gap-2 px-1 pt-1 text-xs font-bold text-slate-500";heading.innerHTML=`<span>${cat.icon}</span><span>${cat.name}</span><span class="text-slate-300">(${subset.length})</span>`;wrap.append(heading);
+   subset.forEach(item=>{
+    const row=document.createElement("div");row.className=`flex items-center gap-2 rounded-2xl border border-slate-200 ${cat.color} p-3 shadow-sm ${item.done?"item-done":""}`;
+    row.innerHTML=`<input type="checkbox" class="h-5 w-5 shrink-0 accent-green-700" ${item.done?"checked":""} aria-label="Erledigt"><div class="min-w-0 flex-1"><p class="item-name break-words font-semibold">${esc(item.name)}</p><p class="text-xs text-slate-500">${esc(qtyText(item))}</p></div><button class="fav rounded-lg p-2 ${item.favorite?"text-amber-500":"text-slate-300"}" aria-label="Favorit umschalten" title="Favorit">★</button><button class="edit rounded-lg p-2 text-slate-500" aria-label="Bearbeiten" title="Bearbeiten">✏️</button><button class="del rounded-lg p-2 text-slate-500" aria-label="Löschen" title="Löschen">🗑️</button>`;
+    row.querySelector("input").addEventListener("change",e=>{item.done=e.target.checked;save();render();});
+    row.querySelector(".fav").addEventListener("click",()=>{item.favorite=!item.favorite;save();render();});
+    row.querySelector(".edit").addEventListener("click",()=>editItem(item.id));
+    row.querySelector(".del").addEventListener("click",()=>{list.items=list.items.filter(x=>x.id!==item.id);save();render();});
+    wrap.append(row);
+   });$("itemsList").append(wrap);
   });
-  $("clearDoneBtn").addEventListener("click", () => {
-    const count = items.filter(x => x.done).length;
-    if (!count) { notify("Keine erledigten Artikel vorhanden."); return; }
-    items = items.filter(x => !x.done); persist(); render(); notify(`${count} erledigte Artikel gelöscht.`);
-  });
-
-  $("uploadBtn").addEventListener("click", () => $("imageInput").click());
-  $("imageInput").addEventListener("change", e => {
-    const incoming = Array.from(e.target.files || []).filter(f => f.type.startsWith("image/"));
-    selectedFiles = [...selectedFiles, ...incoming];
-    e.target.value = "";
-    updatePreviews();
-  });
-  function updatePreviews() {
-    $("previewList").innerHTML = "";
-    selectedFiles.forEach((file, i) => {
-      const chip = document.createElement("span");
-      chip.className = "inline-flex max-w-full items-center gap-2 rounded-lg bg-white/15 px-2 py-1 text-xs text-white";
-      chip.innerHTML = `<span class="max-w-36 truncate">${escapeHtml(file.name)}</span><button type="button" aria-label="Bild entfernen" class="font-bold">×</button>`;
-      chip.querySelector("button").addEventListener("click", () => { selectedFiles.splice(i, 1); updatePreviews(); });
-      $("previewList").append(chip);
-    });
-    $("uploadStatus").textContent = selectedFiles.length ? `${selectedFiles.length} Bild(er) bereit zur Analyse.` : "Noch keine Bilder ausgewählt.";
-    $("analyzeBtn").disabled = !selectedFiles.length;
-  }
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result).split(",")[1]);
-      reader.onerror = () => reject(new Error(`Datei konnte nicht gelesen werden: ${file.name}`));
-      reader.readAsDataURL(file);
-    });
-  }
-  function extractJson(text) {
-    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-    try { return JSON.parse(cleaned); } catch {
-      const start = cleaned.indexOf("{"), end = cleaned.lastIndexOf("}");
-      if (start >= 0 && end > start) return JSON.parse(cleaned.slice(start, end + 1));
-      throw new Error("Die KI-Antwort enthielt kein gültiges JSON.");
-    }
-  }
-  async function analyzeImage(file, apiKey, model) {
-    const base64 = await fileToBase64(file);
-    const prompt = `Analysiere dieses Bild als Einkaufszettel, Rezept oder Produktliste. Extrahiere ausschließlich tatsächlich erkennbare Einkaufsartikel. Gib für jeden Artikel name, quantity (positive Zahl) und unit (kurzer Einheitenstring; leer wenn nicht erkennbar) zurück. Interpretiere Rezeptzutaten als Einkaufsartikel. Ignoriere Zubereitungsschritte, Preise, Werbung und irrelevante Texte. Wenn keine Menge angegeben ist, setze quantity auf 1 und unit auf "Stück" nur wenn sinnvoll, sonst auf "". Fasse innerhalb dieses Bildes identische Artikel mit gleicher Einheit zusammen. Antworte ausschließlich mit JSON im Format {"items":[{"name":"Äpfel","quantity":2,"unit":"Stück"}]}.`;
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
-    const response = await fetch(url, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: file.type, data: base64 } }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "OBJECT", properties: {
-              items: { type: "ARRAY", items: { type: "OBJECT", properties: {
-                name: { type: "STRING" }, quantity: { type: "NUMBER" }, unit: { type: "STRING" }
-              }, required: ["name", "quantity", "unit"] } }
-            }, required: ["items"]
-          }
-        }
-      })
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const detail = data?.error?.message || `HTTP ${response.status}`;
-      throw new Error(`${file.name}: ${detail}`);
-    }
-    const output = data?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("");
-    if (!output) throw new Error(`${file.name}: Keine auswertbare Antwort von Gemini.`);
-    const parsed = extractJson(output);
-    if (!Array.isArray(parsed.items)) throw new Error(`${file.name}: JSON enthält keine Artikelliste.`);
-    return parsed.items;
-  }
-  $("analyzeBtn").addEventListener("click", async () => {
-    const apiKey = localStorage.getItem(STORAGE_KEY);
-    const model = (localStorage.getItem(STORAGE_MODEL) || "gemini-2.5-flash").trim();
-    if (!apiKey) { openSettings(); notify("Bitte zuerst deinen Gemini API-Key eintragen."); return; }
-    if (!selectedFiles.length) return;
-    const files = [...selectedFiles];
-    $("analyzeBtn").disabled = true; $("uploadBtn").disabled = true;
-    $("analyzeBtn").innerHTML = '<span class="spinner"></span> Analysiere…';
-    $("uploadStatus").textContent = `Analysiere ${files.length} Bild(er)…`;
-    let added = 0, errors = [];
-    try {
-      for (let i = 0; i < files.length; i++) {
-        $("uploadStatus").textContent = `Bild ${i + 1} von ${files.length}: ${files[i].name}`;
-        try {
-          const extracted = await analyzeImage(files[i], apiKey, model);
-          extracted.forEach(entry => {
-            if (addOrAggregate(entry.name, entry.quantity ?? 1, entry.unit ?? "")) added++;
-          });
-        } catch (err) { errors.push(err.message); }
-      }
-      persist(); render();
-      selectedFiles = []; updatePreviews();
-      notify(`${added} erkannte Artikel verarbeitet.`);
-      $("uploadStatus").textContent = errors.length ? `Fertig mit ${errors.length} Fehler(n).` : "Alle Bilder erfolgreich analysiert.";
-      if (errors.length) alert("Bei einigen Bildern gab es Probleme:\n\n" + errors.join("\n\n"));
-    } finally {
-      $("analyzeBtn").disabled = !selectedFiles.length;
-      $("analyzeBtn").textContent = "Bilder analysieren";
-      $("uploadBtn").disabled = false;
-    }
-  });
-
-  function openSettings() {
-    $("apiKey").value = localStorage.getItem(STORAGE_KEY) || "";
-    $("modelName").value = localStorage.getItem(STORAGE_MODEL) || "gemini-2.5-flash";
-    $("settingsModal").classList.remove("hidden"); $("settingsModal").classList.add("flex");
-  }
-  function closeSettings() { $("settingsModal").classList.add("hidden"); $("settingsModal").classList.remove("flex"); }
-  $("settingsBtn").addEventListener("click", openSettings);
-  $("closeSettings").addEventListener("click", closeSettings);
-  $("settingsModal").addEventListener("click", e => { if (e.target === $("settingsModal")) closeSettings(); });
-  $("saveSettings").addEventListener("click", () => {
-    const key = $("apiKey").value.trim(), model = $("modelName").value.trim() || "gemini-2.5-flash";
-    if (key) localStorage.setItem(STORAGE_KEY, key); else localStorage.removeItem(STORAGE_KEY);
-    localStorage.setItem(STORAGE_MODEL, model); closeSettings(); notify("Einstellungen gespeichert.");
-  });
-  $("removeKey").addEventListener("click", () => { localStorage.removeItem(STORAGE_KEY); $("apiKey").value = ""; notify("API-Key gelöscht."); });
-
-  render();
-  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(err => console.warn("Service Worker:", err)));
-  }
+ });
+ $("emptyState").classList.toggle("hidden",visible.length>0);
+ $("allFilter").className=`category-chip rounded-full px-4 py-2 text-xs font-bold ${!favoritesOnly?"bg-forest-700 text-white":"border border-slate-200 bg-white text-slate-600"}`;
+ $("favFilter").className=`category-chip rounded-full px-4 py-2 text-xs font-bold ${favoritesOnly?"bg-forest-700 text-white":"border border-slate-200 bg-white text-slate-600"}`;
+ $("clearDoneBtn").disabled=!done.length;$("clearDoneBtn").classList.toggle("opacity-40",!done.length);
+}
+function qtyText(x){return `${new Intl.NumberFormat("de-DE",{maximumFractionDigits:2}).format(Number(x.quantity)||0)}${x.unit?" "+x.unit:""}`;}
+function addItem(entry){
+ const name=String(entry.name||"").trim(),quantity=Number(entry.quantity??1),unit=String(entry.unit||"").trim(),cat=CATEGORIES.some(c=>c.id===entry.category)?entry.category:"sonstiges";
+ if(!name||!Number.isFinite(quantity)||quantity<=0)return false;
+ const list=current(),existing=list.items.find(x=>!x.done&&norm(x.name)===norm(name)&&norm(x.unit)===norm(unit)&&x.category===cat);
+ if(existing)existing.quantity=Number(existing.quantity||0)+quantity;
+ else list.items.push({id:uid(),name,quantity,unit,category:cat,done:false,favorite:false});
+ return true;
+}
+function editItem(id){
+ const list=current(),it=list.items.find(x=>x.id===id);if(!it)return;
+ const name=prompt("Artikelname:",it.name);if(name===null)return;if(!name.trim()){notify("Name darf nicht leer sein.");return;}
+ const qty=prompt("Menge:",String(it.quantity));if(qty===null)return;const n=Number(qty.replace(",","."));if(!Number.isFinite(n)||n<=0){notify("Ungültige Menge.");return;}
+ const unit=prompt("Einheit:",it.unit||"");if(unit===null)return;
+ const cat=prompt("Warengruppe: "+CATEGORIES.map(c=>`${c.id} = ${c.name}`).join(" | "),it.category||"sonstiges");if(cat===null)return;
+ it.name=name.trim();it.quantity=n;it.unit=unit.trim();it.category=CATEGORIES.some(c=>c.id===cat.trim())?cat.trim():"sonstiges";
+ const dup=list.items.find(x=>x.id!==id&&!x.done&&!it.done&&norm(x.name)===norm(it.name)&&norm(x.unit)===norm(it.unit)&&x.category===it.category);
+ if(dup){dup.quantity=Number(dup.quantity)+n;list.items=list.items.filter(x=>x.id!==id);}save();render();
+}
+$("addForm").addEventListener("submit",e=>{e.preventDefault();const ok=addItem({name:$("newName").value,quantity:$("newQty").value,unit:$("newUnit").value,category:$("newCategory").value});if(!ok)return;$("newName").value="";$("newQty").value="1";$("newUnit").value="";save();render();notify("Artikel hinzugefügt.");});
+$("listSelect").addEventListener("change",e=>{db.currentListId=e.target.value;favoritesOnly=false;save();render();});
+$("newListBtn").addEventListener("click",()=>{const name=prompt("Name der neuen Einkaufsliste:");if(!name||!name.trim())return;const l={id:uid(),name:name.trim(),items:[]};db.lists.push(l);db.currentListId=l.id;favoritesOnly=false;save();render();notify("Neue Liste erstellt.");});
+$("renameListBtn").addEventListener("click",()=>{const l=current(),name=prompt("Neuer Listenname:",l.name);if(name&&name.trim()){l.name=name.trim();save();render();}});
+$("deleteListBtn").addEventListener("click",()=>{if(db.lists.length===1){notify("Mindestens eine Liste muss bestehen bleiben.");return;}const l=current();if(!confirm(`Liste „${l.name}“ wirklich mit allen Artikeln löschen?`))return;db.lists=db.lists.filter(x=>x.id!==l.id);db.currentListId=db.lists[0].id;save();render();});
+$("allFilter").addEventListener("click",()=>{favoritesOnly=false;render();});$("favFilter").addEventListener("click",()=>{favoritesOnly=true;render();});
+$("clearDoneBtn").addEventListener("click",()=>{const l=current(),n=l.items.filter(x=>x.done).length;if(!n)return;if(confirm(`${n} erledigte Artikel löschen?`)){l.items=l.items.filter(x=>!x.done);save();render();}});
+$("uploadBtn").addEventListener("click",()=>$("imageInput").click());
+$("imageInput").addEventListener("change",e=>{selectedFiles.push(...Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/")));e.target.value="";renderPreviews();});
+function renderPreviews(){$("previewList").innerHTML="";selectedFiles.forEach((f,i)=>{const chip=document.createElement("span");chip.className="inline-flex max-w-full items-center gap-2 rounded-lg bg-white/15 px-2 py-1 text-xs text-white";chip.innerHTML=`<span class="max-w-36 truncate">${esc(f.name)}</span><button type="button" aria-label="Entfernen" class="font-bold">×</button>`;chip.querySelector("button").addEventListener("click",()=>{selectedFiles.splice(i,1);renderPreviews();});$("previewList").append(chip);});$("uploadStatus").textContent=selectedFiles.length?`${selectedFiles.length} Bild(er) ausgewählt.`:"Noch keine Bilder ausgewählt.";$("analyzeBtn").disabled=!selectedFiles.length;}
+function toBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(Error("Bild konnte nicht gelesen werden."));r.readAsDataURL(file);});}
+async function analyze(file,key,model){
+ const b64=await toBase64(file),prompt=`Lies dieses Bild als Einkaufszettel, Rezept oder Produktliste. Extrahiere die Einkaufsartikel mit Name, positiver Menge, Einheit und passender Warengruppe. Bei Rezepten Zutaten als Einkaufsartikel interpretieren. Wenn keine Menge erkennbar ist, quantity=1 und unit="". Identische Artikel mit gleicher Einheit und Warengruppe innerhalb dieses Bildes zusammenfassen. Warengruppe muss exakt eine der folgenden IDs sein: obst, backwaren, milch, fleisch, trocken, getraenke, tiefkuehl, haushalt, drogerie, sonstiges. Obst/Gemüse, Backwaren, Milchprodukte/Eier, Fleisch/Fisch, Vorrat/Konserven, Getränke, Tiefkühl, Haushalt, Drogerie oder Sonstiges. Keine Erklärungen. JSON-Format: {"items":[{"name":"Äpfel","quantity":2,"unit":"Stück","category":"obst"}]}`;
+ const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+ const resp=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:file.type,data:b64}}]}],generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{items:{type:"ARRAY",items:{type:"OBJECT",properties:{name:{type:"STRING"},quantity:{type:"NUMBER"},unit:{type:"STRING"},category:{type:"STRING",enum:CATEGORIES.map(c=>c.id)}},required:["name","quantity","unit","category"]}}},required:["items"]}}})});
+ const data=await resp.json().catch(()=>({}));if(!resp.ok)throw Error(data?.error?.message||`HTTP ${resp.status}`);
+ const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("");if(!raw)throw Error("Keine Gemini-Antwort erhalten.");const parsed=JSON.parse(raw);if(!Array.isArray(parsed.items))throw Error("Antwort enthält keine Artikelliste.");return parsed.items;
+}
+$("analyzeBtn").addEventListener("click",async()=>{
+ const key=localStorage.getItem(KEY_KEY),model=(localStorage.getItem(MODEL_KEY)||"gemini-2.5-flash").trim();if(!key){openSettings();notify("Bitte zuerst einen Gemini-Key hinterlegen.");return;}if(!selectedFiles.length)return;
+ const files=[...selectedFiles];$("analyzeBtn").disabled=true;$("uploadBtn").disabled=true;$("analyzeBtn").innerHTML='<span class="spinner"></span> Analysiere…';let added=0,errors=[];
+ try{for(let i=0;i<files.length;i++){$("uploadStatus").textContent=`Analysiere Bild ${i+1}/${files.length}: ${files[i].name}`;try{const entries=await analyze(files[i],key,model);entries.forEach(x=>{if(addItem(x))added++;});}catch(err){errors.push(`${files[i].name}: ${err.message}`);}}
+ save();render();selectedFiles=[];renderPreviews();notify(`${added} erkannte Artikel verarbeitet.`);$("uploadStatus").textContent=errors.length?`${errors.length} Bild(er) mit Fehlern.`:"Alle Bilder erfolgreich analysiert.";if(errors.length)alert("Fehler bei der Bilderkennung:\n\n"+errors.join("\n\n"));
+ }finally{$("analyzeBtn").disabled=!selectedFiles.length;$("analyzeBtn").textContent="Bilder analysieren";$("uploadBtn").disabled=false;}
+});
+function openSettings(){$("apiKey").value=localStorage.getItem(KEY_KEY)||"";$("modelName").value=localStorage.getItem(MODEL_KEY)||"gemini-2.5-flash";$("settingsModal").classList.remove("hidden");$("settingsModal").classList.add("flex");}
+function closeSettings(){$("settingsModal").classList.add("hidden");$("settingsModal").classList.remove("flex");}
+$("settingsBtn").addEventListener("click",openSettings);$("closeSettings").addEventListener("click",closeSettings);$("settingsModal").addEventListener("click",e=>{if(e.target===$("settingsModal"))closeSettings();});
+$("saveSettings").addEventListener("click",()=>{const key=$("apiKey").value.trim(),model=$("modelName").value.trim()||"gemini-2.5-flash";if(key)localStorage.setItem(KEY_KEY,key);else localStorage.removeItem(KEY_KEY);localStorage.setItem(MODEL_KEY,model);closeSettings();notify("Einstellungen gespeichert.");});
+$("removeKey").addEventListener("click",()=>{localStorage.removeItem(KEY_KEY);$("apiKey").value="";notify("API-Key gelöscht.");});
+fillCategories();render();save();
+if("serviceWorker"in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn));
 })();
 </script>
-</body>
-</html>
+</body></html>
