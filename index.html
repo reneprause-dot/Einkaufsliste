@@ -42,6 +42,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  </section>
 
  <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+  <h2 class="font-bold">🎤 Per Sprache hinzufügen</h2>
+  <textarea id="voiceText" rows="2" placeholder="z. B. „Ich brauche drei Äpfel, einen Liter Milch und Toilettenpapier“" class="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm"></textarea>
+  <div class="mt-2 flex gap-2"><button id="micBtn" type="button" class="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold">🎤 Sprechen</button><button id="voiceAddBtn" type="button" class="flex-1 rounded-xl bg-forest-700 px-3 py-3 text-sm font-bold text-white">＋ Übernehmen</button></div>
+  <p id="voiceStatus" class="mt-2 text-xs text-slate-500" aria-live="polite">Tipp: Falls „Sprechen“ nicht geht, das Mikrofon der Tastatur nutzen und dann „Übernehmen“ tippen.</p>
+ </section>
+
+ <section class="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
   <h2 class="font-bold">Artikel hinzufügen</h2>
   <form id="addForm" class="mt-3 grid grid-cols-12 gap-2">
    <input id="newName" list="prodList" autocomplete="off" required maxlength="100" placeholder="Artikel, z. B. Äpfel" class="col-span-12 min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm sm:col-span-5">
@@ -170,11 +177,11 @@ $("clearDoneBtn").addEventListener("click",()=>{const l=current(),n=l.items.filt
 $("uploadBtn").addEventListener("click",()=>$("imageInput").click());
 $("imageInput").addEventListener("change",e=>{selectedFiles.push(...Array.from(e.target.files||[]).filter(f=>f.type.startsWith("image/")));e.target.value="";renderPreviews();});
 function renderPreviews(){$("previewList").innerHTML="";selectedFiles.forEach((f,i)=>{const chip=document.createElement("span");chip.className="inline-flex max-w-full items-center gap-2 rounded-lg bg-white/15 px-2 py-1 text-xs text-white";chip.innerHTML=`<span class="max-w-36 truncate">${esc(f.name)}</span><button type="button" aria-label="Entfernen" class="font-bold">×</button>`;chip.querySelector("button").addEventListener("click",()=>{selectedFiles.splice(i,1);renderPreviews();});$("previewList").append(chip);});$("uploadStatus").textContent=selectedFiles.length?`${selectedFiles.length} Bild(er) ausgewählt.`:"Noch keine Bilder ausgewählt.";$("analyzeBtn").disabled=!selectedFiles.length;}
-function toBase64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=()=>rej(Error("Bild konnte nicht gelesen werden."));r.readAsDataURL(file);});}
+function toBase64(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),img=new Image();img.onload=()=>{const f=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*f);c.height=Math.round(img.height*f);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(u);res(c.toDataURL("image/jpeg",.85).split(",")[1]);};img.onerror=()=>rej(Error("Bild konnte nicht gelesen werden."));img.src=u;});}
 async function analyzeWith(file,key,model){
  const b64=await toBase64(file),prompt=`Lies dieses Bild als Einkaufszettel, Rezept oder Produktliste. Extrahiere die Einkaufsartikel mit Name, positiver Menge, Einheit und passender Warengruppe. Bei Rezepten Zutaten als Einkaufsartikel interpretieren. Wenn keine Menge erkennbar ist, quantity=1 und unit="". Identische Artikel mit gleicher Einheit und Warengruppe innerhalb dieses Bildes zusammenfassen. Warengruppe muss exakt eine der folgenden IDs sein: obst, backwaren, milch, fleisch, trocken, getraenke, tiefkuehl, haushalt, drogerie, sonstiges. Obst/Gemüse, Backwaren, Milchprodukte/Eier, Fleisch/Fisch, Vorrat/Konserven, Getränke, Tiefkühl, Haushalt, Drogerie oder Sonstiges. Keine Erklärungen. JSON-Format: {"items":[{"name":"Äpfel","quantity":2,"unit":"Stück","category":"obst"}]}`;
- const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
- const resp=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:file.type,data:b64}}]}],generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{items:{type:"ARRAY",items:{type:"OBJECT",properties:{name:{type:"STRING"},quantity:{type:"NUMBER"},unit:{type:"STRING"},category:{type:"STRING",enum:CATEGORIES.map(c=>c.id)}},required:["name","quantity","unit","category"]}}},required:["items"]}}})});
+ const url=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+ const resp=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt},{inline_data:{mime_type:"image/jpeg",data:b64}}]}],generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{items:{type:"ARRAY",items:{type:"OBJECT",properties:{name:{type:"STRING"},quantity:{type:"NUMBER"},unit:{type:"STRING"},category:{type:"STRING",enum:CATEGORIES.map(c=>c.id)}},required:["name","quantity","unit","category"]}}},required:["items"]}}})});
  const data=await resp.json().catch(()=>({}));if(!resp.ok){const e=Error(data?.error?.message||`HTTP ${resp.status}`);e.status=resp.status;throw e;}
  const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("");if(!raw)throw Error("Keine Gemini-Antwort erhalten.");const parsed=JSON.parse(raw);if(!Array.isArray(parsed.items))throw Error("Antwort enthält keine Artikelliste.");return parsed.items;
 }
@@ -184,7 +191,7 @@ async function analyze(file,key,model){let last;for(const m of [model,...MODELS.
 $("analyzeBtn").addEventListener("click",async()=>{
  const key=localStorage.getItem(KEY_KEY),model=getModel();if(!key){openSettings();notify("Bitte zuerst einen Gemini-Key hinterlegen.");return;}if(!selectedFiles.length)return;
  const files=[...selectedFiles];$("analyzeBtn").disabled=true;$("uploadBtn").disabled=true;$("analyzeBtn").innerHTML='<span class="spinner"></span> Analysiere…';let added=0,errors=[];
- try{for(let i=0;i<files.length;i++){$("uploadStatus").textContent=`Analysiere Bild ${i+1}/${files.length}: ${files[i].name}`;try{const entries=await analyze(files[i],key,model);entries.forEach(x=>{if(addItem(x))added++;});}catch(err){errors.push(`${files[i].name}: ${err.message}`);}}
+ try{for(let i=0;i<files.length;i++){$("uploadStatus").textContent=`Analysiere Bild ${i+1}/${files.length}: ${files[i].name}`;try{const entries=await analyze(files[i],key,model);entries.forEach(x=>{if(addItem(x))added++;});}catch(err){errors.push(`${files[i].name}: ${err.message==="Load failed"||err.message==="Failed to fetch"?"Keine Verbindung zu Gemini (Netzwerk/Key prüfen)":err.message}`);}}
  save();render();selectedFiles=[];renderPreviews();notify(`${added} erkannte Artikel verarbeitet.`);$("uploadStatus").textContent=errors.length?`${errors.length} Bild(er) mit Fehlern.`:"Alle Bilder erfolgreich analysiert.";if(errors.length)alert("Fehler bei der Bilderkennung:\n\n"+errors.join("\n\n"));
  }finally{$("analyzeBtn").disabled=!selectedFiles.length;$("analyzeBtn").textContent="Bilder analysieren";$("uploadBtn").disabled=false;}
 });
@@ -240,6 +247,40 @@ $("scanBtn").addEventListener("click",async()=>{$("scanModal").classList.remove(
  try{await loadScanLib();const F=Html5QrcodeSupportedFormats;scanner=new Html5Qrcode("reader",{verbose:false,formatsToSupport:[F.EAN_13,F.EAN_8,F.UPC_A,F.UPC_E,F.CODE_128]});
   await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:260,height:140}},onScan,()=>{});}catch(e){await closeScan();notify(String(e.message||e).slice(0,90));}});
 $("closeScan").addEventListener("click",closeScan);
+
+// ===== Spracheingabe =====
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
+async function viaModels(fn){const model=getModel();let last;for(const m of [model,...MODELS.filter(x=>x!==model)]){try{const r=await fn(m);if(m!==model)localStorage.setItem(MODEL_KEY,m);return r;}catch(e){last=e;if(!(e.status===404||/not found|no longer available|deprecated|not supported/i.test(e.message)))throw e;}}throw last;}
+async function textWith(text,key,model){
+ const prompt=`Der Nutzer hat einen Satz diktiert. Filtere daraus nur die Artikel, die eingekauft werden sollen (keine Füllwörter, Höflichkeiten oder Zeitangaben). Zahlwörter in Zahlen umwandeln. Namen im Nominativ Singular bzw. üblicher Form, korrekt geschrieben. Ohne Menge: quantity=1, unit="". Einheit z. B. Stück, Liter, Packung, kg, g. Warengruppe exakt eine ID aus: ${CATEGORIES.map(c=>c.id).join(", ")}. Satz: "${text.replace(/"/g,"'")}"`;
+ const resp=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{items:{type:"ARRAY",items:{type:"OBJECT",properties:{name:{type:"STRING"},quantity:{type:"NUMBER"},unit:{type:"STRING"},category:{type:"STRING",enum:CATEGORIES.map(c=>c.id)}},required:["name","quantity","unit","category"]}}},required:["items"]}}})});
+ const data=await resp.json().catch(()=>({}));if(!resp.ok){const e=Error(data?.error?.message||`HTTP ${resp.status}`);e.status=resp.status;throw e;}
+ const raw=data?.candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("");if(!raw)throw Error("Keine Gemini-Antwort erhalten.");const p=JSON.parse(raw);if(!Array.isArray(p.items))throw Error("Keine Artikelliste.");return p.items;}
+function localParse(text){
+ const NUM={ein:1,eine:1,einen:1,einem:1,zwei:2,drei:3,vier:4,fünf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,zwölf:12};
+ const filler=/^(?:(?:ich|wir|du|bitte|noch|außerdem|auch|dann|und|also|mal|muss|müssen|brauche|brauchen|kaufe|kaufen|möchte|will|holen|besorgen|einkaufen|dazu|sowie)\s+)+/i;
+ return text.split(/,|;|\bund\b|\bsowie\b|\bdazu\b/i).map(p=>p.trim().replace(filler,"").trim()).filter(Boolean).map(p=>{
+  let q=1,unit="",m=p.match(/^(\d+(?:[.,]\d+)?|ein|eine|einen|einem|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|zwölf)\s+(.*)$/i);
+  if(m){q=NUM[m[1].toLowerCase()]||Number(m[1].replace(",","."))||1;p=m[2];}
+  const u=p.match(/^(Liter|l|kg|Kilo|g|Gramm|Packung(?:en)?|Flasche(?:n)?|Dose(?:n)?|Stück|Bund|Becher|Glas|Gläser)\s+(?:von\s+)?(.+)$/i);
+  if(u){unit=u[1];p=u[2];}
+  return{name:p.charAt(0).toUpperCase()+p.slice(1),quantity:q,unit};});}
+async function processVoice(){
+ const text=$("voiceText").value.trim();if(!text)return;const key=localStorage.getItem(KEY_KEY);let items,src="KI";
+ $("voiceStatus").textContent="Verarbeite …";$("voiceAddBtn").disabled=true;
+ try{if(!key)throw Error("kein Key");items=await viaModels(m=>textWith(text,key,m));}catch(e){items=localParse(text);src="einfache Erkennung";if(key)notify("KI nicht erreichbar – einfache Erkennung genutzt.");}
+ let n=0;items.forEach(x=>{if(addItem(x))n++;});
+ $("voiceAddBtn").disabled=false;
+ if(n){save();render();$("voiceText").value="";$("voiceStatus").textContent=`${n} Artikel hinzugefügt (${src}): ${items.map(x=>x.name).join(", ")}`;}else $("voiceStatus").textContent="Keine Artikel erkannt.";}
+$("voiceAddBtn").addEventListener("click",processVoice);
+$("micBtn").addEventListener("click",()=>{
+ if(rec){rec.stop();return;}
+ if(!SR){notify("Spracherkennung hier nicht verfügbar – nutze das Tastatur-Mikrofon.");$("voiceText").focus();return;}
+ const base=$("voiceText").value.trim();rec=new SR();rec.lang="de-DE";rec.interimResults=true;rec.continuous=false;
+ rec.onresult=e=>{$("voiceText").value=(base?base+" ":"")+Array.from(e.results).map(r=>r[0].transcript).join(" ");};
+ rec.onerror=e=>notify(e.error==="not-allowed"||e.error==="service-not-allowed"?"Mikrofon-Zugriff nicht erlaubt.":"Spracherkennung: "+e.error);
+ rec.onend=()=>{rec=null;$("micBtn").textContent="🎤 Sprechen";processVoice();};
+ try{rec.start();$("micBtn").textContent="⏹ Zuhören … (tippen zum Beenden)";$("voiceStatus").textContent="Sprich jetzt, z. B. „Ich brauche Milch und drei Bananen“.";}catch(e){rec=null;notify("Mikrofon konnte nicht gestartet werden.");}});
 fillCategories();setView("list");save();
 if("serviceWorker"in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(console.warn));
 })();
